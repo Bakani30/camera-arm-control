@@ -7,3 +7,5 @@ Windows + ASUS TUF A15; ทีมเรียนรู้และทำที�
 ยังไม่ผ่าน acceptance: กล้อง ASUS/Windows และความถูกต้องจำแนกมือจริง NOT RUN
 งานต่อ: ติดตั้งบน Windows เก็บ pilot ตามคู่มือ ยังไม่ต่อแขนจริง
 P001 feasibility ของซิม/BOM ไม่ถือว่าจบจากต้นแบบนี้
+
+อัปเดตคู่มือทีม: เพิ่มรายการติดตั้ง การเข้าถึง Private repo วิธี clone/ZIP การตรวจติดตั้ง และการอัปเดต; Windows ASUS ยัง NOT RUN

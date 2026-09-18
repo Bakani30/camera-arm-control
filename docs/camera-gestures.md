@@ -2,8 +2,45 @@
 
 Windows + กล้อง ASUS TUF A15; ใช้ Python 3.11 แบบ 64-bit
 
+## รายการที่ทีมต้องติดตั้ง
+
+| รายการ | จำเป็นไหม | ใช้ทำอะไร |
+|---|---|---|
+| Python 3.11.x สำหรับ Windows 64-bit | จำเป็น | รันโปรแกรมและสร้าง environment |
+| Git for Windows | จำเป็นสำหรับวิธี clone/pull | ดาวน์โหลดและอัปเดตโค้ด; ถ้าใช้ ZIP ไม่ต้องมี Git |
+| Visual Studio Code (VS Code) | แนะนำ | เปิดโฟลเดอร์และแก้โค้ด |
+| ส่วนขยาย Python ของ Microsoft ใน VS Code | แนะนำเมื่อใช้ VS Code | ช่วยเลือก Python และรันโค้ด |
+| MediaPipe, OpenCV, NumPy | จำเป็น; ติดตั้งผ่านคำสั่งด้านล่าง | จำแนกท่ามือ เปิดกล้อง และจัดการภาพ |
+| โมเดล Gesture Recognizer | จำเป็น; ดาวน์โหลดผ่านคำสั่งด้านล่าง | โมเดลสำเร็จรูปสำหรับตรวจท่ามือ |
+
+ใช้ installer จากเว็บไซต์ผู้พัฒนา Python, Git และ Visual Studio Code โดยตรง ตอนติดตั้ง Python ติ๊ก **Add python.exe to PATH** และติดตั้ง Python Launcher เพื่อใช้คำสั่ง `py` เลือก Python 3.11 สำหรับต้นแบบนี้ ไม่ใช้เวอร์ชันอื่นแทนโดยอัตโนมัติ
+
+ยังไม่ต้องติดตั้ง GitHub Desktop, CUDA, Arduino IDE หรือซิม ส่วนผู้วางแผน/แจกงานใช้ GitHub ผ่านเบราว์เซอร์ได้ ไม่ต้องติดตั้งชุดพัฒนาถ้าไม่ได้รันโปรแกรม
+
+## เตรียมบัญชีและดาวน์โหลดโค้ด
+
+- [ ] มีบัญชี GitHub และรับคำเชิญเข้า repository แล้ว (เป็น Private)
+- [ ] ติดตั้ง Python และ Git แล้ว ปิดและเปิด PowerShell ใหม่
+- [ ] ตรวจคำสั่งต่อไปนี้: ต้องเห็น Python 3.11.x และเวอร์ชัน Git
+
+```powershell
+py -3.11 --version
+git --version
+```
+
+เปิด PowerShell ในตำแหน่งที่จะเก็บโปรเจกต์:
+
+```powershell
+git clone https://github.com/Bakani30/camera-arm-control.git
+cd camera-arm-control
+```
+
+ถ้า Git ขอเข้าสู่ระบบ ให้ใช้บัญชีที่มีสิทธิ์ repository หากไม่ใช้ Git ให้เปิด repository ในเบราว์เซอร์ เลือก **Code > Download ZIP** แตกไฟล์ แล้วเปิด PowerShell ภายในโฟลเดอร์ที่มี `requirements.txt`
+
 ## ติดตั้งครั้งแรก
-ติดตั้ง Python 3.11 แล้วเปิด PowerShell ในโฟลเดอร์โปรเจกต์ รันทีละบรรทัด ไม่ต้อง activate environment:
+
+รันทีละบรรทัดจากโฟลเดอร์โปรเจกต์ ไม่ต้อง activate environment และไม่ต้องเปลี่ยน PowerShell execution policy:
+
 
 ```powershell
 py -3.11 -m venv .venv
@@ -13,6 +50,33 @@ py -3.11 -m venv .venv
 ```
 
 ต้องใช้อินเทอร์เน็ตตอนติดตั้งและดาวน์โหลดโมเดล หลังจากนั้นประมวลผลในเครื่อง ไม่ส่งภาพออก ไม่มีการบันทึกภาพหรือวิดีโออัตโนมัติ
+
+สร้าง `.venv` ใหม่ในแต่ละเครื่อง ห้ามคัดลอก `.venv` ของ Mac มาใช้บน Windows ถ้าใช้ VS Code ให้เปิดโฟลเดอร์โปรเจกต์ แล้วเลือก **Python: Select Interpreter** เป็น `.venv\Scripts\python.exe`
+
+## เปิดครั้งถัดไปและอัปเดต
+
+เปิด PowerShell ในโฟลเดอร์โปรเจกต์แล้วรัน:
+
+```powershell
+.\.venv\Scripts\python.exe -m camera_gestures.app
+```
+
+ถ้ารับโค้ดมาด้วย Git ให้อัปเดตเมื่อทีมแจ้งว่ามีรุ่นใหม่ (ถ้ามีงานแก้ในเครื่อง ให้เก็บงานก่อน):
+
+```powershell
+git pull --ff-only
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+## ตรวจว่าติดตั้งเสร็จ
+
+- [ ] โปรแกรมเปิดภาพจากกล้องได้
+- [ ] แบมือค้างแสดง `01`; กำมือค้างแสดง `10`
+- [ ] นำมือออกจากภาพแล้วกลับเป็น `00`
+- [ ] กด Q/Esc แล้วโปรแกรมปิดและเปิดใหม่ได้
+- [ ] ส่งผลทดสอบและข้อความ error (ถ้ามี) กลับผู้วางแผน พร้อมรุ่นเครื่องและเวอร์ชัน Python
+
+รายการนี้คือเกณฑ์ให้ทีมตรวจเอง ยังไม่ใช่ผลยืนยันจากเครื่อง ASUS
 
 ## ใช้งาน
 - แบมือ `Open_Palm`: `01`
