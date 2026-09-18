@@ -1,0 +1,4 @@
+# Camera gesture prototype
+User approved implementation in chat: Windows + ASUS TUF A15 webcam, one hand, Open_Palm=01, Closed_Fist=10, missing/unclear=00. Display camera, landmarks, gesture and output; record output changes. No robot connection.
+Use pretrained MediaPipe Gesture Recognizer and OpenCV. Require score >=0.7 and 250 ms continuous recognition before nonzero output; these are pilot defaults, not measured acceptance criteria. Unknown input clears output immediately. A changed recognized gesture clears the old command while stabilizing. Gaps >500 ms reset stabilization. Times are monotonic application receipt times, not camera exposure times. Scores are model scores, not calibrated probabilities.
+Windows camera validation remains a manual acceptance test. No claim of metric depth, wrist orientation accuracy, or hardware safety. This prototype is the gesture-output slice, not the whole camera milestone.

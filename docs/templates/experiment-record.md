@@ -1,0 +1,18 @@
+# Experiment record template
+- Run ID / วันที่ / pilot หรือ main:
+- คำถาม / hypothesis / baseline:
+- ผู้ทดลอง / session / trial count:
+- Code revision หรือ source checksum:
+- เครื่อง / OS / dependencies / GPU:
+- Robot model / profile / adapter versions:
+- Camera / resolution / FPS / calibration:
+- Input/data manifest / split / seed:
+- Method / weights / hyperparameters:
+- Task / objects / initial conditions / limits:
+- Metrics / units / clock / timestamp boundaries:
+- Success / failure / exclusion criteria:
+- คำสั่งรัน / config path:
+- ผลจริง / spread / failed trials:
+- หลักฐาน / raw log / checksum:
+- ข้อจำกัด / inference ที่ยังพิสูจน์ไม่ได้:
+- การเปลี่ยนครั้งต่อไปและเหตุผล:

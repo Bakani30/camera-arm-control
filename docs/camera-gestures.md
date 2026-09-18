@@ -1,0 +1,52 @@
+# ต้นแบบกล้องแปลงท่ามือเป็นรหัส
+
+Windows + กล้อง ASUS TUF A15; ใช้ Python 3.11 แบบ 64-bit
+
+## ติดตั้งครั้งแรก
+ติดตั้ง Python 3.11 แล้วเปิด PowerShell ในโฟลเดอร์โปรเจกต์ รันทีละบรรทัด ไม่ต้อง activate environment:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m camera_gestures.download_model
+.\.venv\Scripts\python.exe -m camera_gestures.app
+```
+
+ต้องใช้อินเทอร์เน็ตตอนติดตั้งและดาวน์โหลดโมเดล หลังจากนั้นประมวลผลในเครื่อง ไม่ส่งภาพออก ไม่มีการบันทึกภาพหรือวิดีโออัตโนมัติ
+
+## ใช้งาน
+- แบมือ `Open_Palm`: `01`
+- กำมือ `Closed_Fist`: `10`
+- ไม่พบมือ ท่าอื่น หรือคะแนนต่ำ: `00`
+- เปลี่ยนท่าระหว่างกำกับแบ: `00` ระหว่างรอท่าคงที่
+- รอท่าเดิมต่อเนื่อง 250 ms และ score >=0.7 ก่อนออก `01`/`10`; ค่าเริ่มทดลอง ปรับได้
+- `Q` หรือ `Esc` ปิดโปรแกรม
+- แสดงจุดมือ ภาพกลับซ้ายขวาเหมือนกระจก รหัส และเวลาประมวลผลโมเดล (ไม่ใช่ latency ทั้งระบบ)
+- ใช้มือเดียวในภาพ โปรแกรมไม่ได้รับรองการเลือกคน/มือเมื่อมีหลายมือ
+
+```powershell
+.\.venv\Scripts\python.exe -m camera_gestures.app --camera 1
+.\.venv\Scripts\python.exe -m camera_gestures.app --threshold 0.8 --dwell-ms 350
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+ถ้าเปิดกล้องไม่ได้: ปิด Camera/Teams/Zoom ตรวจ Settings > Privacy & security > Camera และสิทธิ์ desktop apps แล้วลอง camera index อื่น
+
+## Log และข้อจำกัด
+`logs/` มี CSV เฉพาะตอน output เปลี่ยน รวมเริ่ม/จบ และ JSON ข้อมูล environment/config ต่อ session รหัสเป็นข้อความสองหลัก หากเปิดใน Excel ให้ตั้งคอลัมน์เป็น Text เพื่อรักษาเลข 0 นำหน้า
+Timestamp คือเวลารับเฟรมในโปรแกรม ไม่ใช่เวลา exposure ของกล้อง; FPS ใน JSON คือค่าที่ driver รายงาน อาจเป็น 0 หรือไม่ตรงอัตราจริง
+คะแนนไม่ใช่ probability ที่ผ่าน calibration และ log นี้ยังไม่พอวัดอัตรา tracking dropout ทุกเฟรม
+
+เมื่อข้อมูลไม่ชัด output กลับ 00 ทันทีที่ประมวลผลเฟรมนั้น ผลโมเดลที่ใช้เกิน 500 ms ถูกปัดเป็น 00 ช่องว่าง observation >500 ms เริ่มรอท่าใหม่ อย่างไรก็ตาม synchronous camera read/inference อาจค้างได้ ไม่มี independent watchdog จึงห้ามใช้ต้นแบบนี้สั่งฮาร์ดแวร์โดยตรง `00` ไม่ได้หมายถึงเปิดก้ามหรือตัดไฟ
+
+## ทดลองบน ASUS — ยัง NOT RUN
+แสงคงที่ ไม่ย้อนแสง เห็นมือและข้อมือครบ เริ่มทีละมือ:
+1. แบมือค้าง 2 วินาที 10 รอบ: ควรได้ 01 หลังช่วงรอ
+2. กำมือค้าง 2 วินาที 10 รอบ: ควรได้ 10 หลังช่วงรอ
+3. นำมือออก/ทำท่าอื่น: ควรได้ 00 และกลับเข้ามาต้องรอใหม่
+4. สลับกำ–แบเร็ว: ไม่ควรปล่อยรหัสที่ยังไม่ผ่านช่วงรอ
+5. หมุนมือ/บังนิ้ว: บันทึกการทายผิด ไม่ถือ 00 ทุกกรณีเป็นสิ่งที่โมเดลรับประกัน
+6. ปิดหน้าต่างและเปิดใหม่: กล้องต้องถูกคืนและใช้งานได้
+บันทึกรหัสเครื่อง แสง ระยะมือ ผลแต่ละรอบ และไฟล์ log ก่อนปรับ threshold
+
+อ้างอิง API/โมเดล: https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/python
