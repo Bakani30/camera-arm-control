@@ -79,9 +79,10 @@ def main():
                     if result.gestures and result.gestures[0]:
                         top = max(result.gestures[0], key=lambda x: x.score)
                         gesture, score = top.category_name, top.score
+                    has_hand = bool((result.hand_landmarks or (result.gestures and result.gestures[0])) and elapsed <= 500)
                     if elapsed > 500:
                         gesture, score = 'Stale_result', 0.0
-                    code = state.update(gesture, score, now)
+                    code = state.update(gesture, score, now, has_hand=has_hand)
                     emit(now, gesture, score, code, elapsed)
                     h, w = frame.shape[:2]
                     for hand in result.hand_landmarks:

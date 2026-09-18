@@ -16,12 +16,16 @@ class GestureOutput:
         self.current = '00'
         self.since = 0
         self.last = None
+        self.lost_since = None
 
-    def update(self, gesture, score, now_ms):
+    def update(self, gesture, score, now_ms, has_hand=None):
         if self.last is not None and (now_ms < self.last or now_ms-self.last > self.max_gap_ms):
             self.candidate = '00'
             self.current = '00'
+            self.lost_since = None
         self.last = now_ms
+        if has_hand is None:
+            has_hand = gesture not in ('No_hand', 'Stale_result')
         code = {'Open_Palm': '01', 'Closed_Fist': '10'}.get(gesture, '00')
         if not math.isfinite(score) or score < self.threshold:
             code = '00'
@@ -30,8 +34,12 @@ class GestureOutput:
         if self.candidate != '00':
             if now_ms-self.since >= self.dwell_ms:
                 self.current = self.candidate
+        if has_hand:
+            self.lost_since = None
         else:
-            if now_ms-self.since >= self.drop_ms:
+            if self.lost_since is None:
+                self.lost_since = now_ms
+            if now_ms-self.lost_since >= self.drop_ms:
                 self.current = '00'
         return self.current
 

@@ -24,18 +24,28 @@ class GestureTests(unittest.TestCase):
         self.assertEqual(s.update('Closed_Fist', 0.9, 649), '01')
         self.assertEqual(s.update('Closed_Fist', 0.9, 650), '10')
 
-    def test_invalid_input_clears_after_drop_ms(self):
-        for gesture, score in [('None', 1), ('Victory', .9), ('Open_Palm', .69), ('Open_Palm', float('nan'))]:
-            s = GestureOutput(drop_ms=250)
-            s.update('Open_Palm', .9, 0)
-            self.assertEqual(s.update('Open_Palm', .9, 250), '01')
-            # Short invalid input within drop_ms holds previous '01'
-            self.assertEqual(s.update(gesture, score, 260), '01')
-            # Invalid input sustained >= drop_ms clears to '00'
-            self.assertEqual(s.update(gesture, score, 510), '00')
-            # After clearing to '00', reacquisition requires full dwell_ms
-            self.assertEqual(s.update('Open_Palm', .9, 520), '00')
-            self.assertEqual(s.update('Open_Palm', .9, 770), '01')
+    def test_hand_present_never_drops_to_00(self):
+        s = GestureOutput(drop_ms=250)
+        s.update('Open_Palm', .9, 0)
+        self.assertEqual(s.update('Open_Palm', .9, 250), '01')
+        # Stream frames with hand present at 100ms intervals (well below max_gap_ms)
+        # Even after long duration (> drop_ms), if hand is present, it must NEVER drop to '00'
+        for t in range(300, 3000, 100):
+            gesture = 'Victory' if t < 1500 else 'None'
+            self.assertEqual(s.update(gesture, 0.4, t, has_hand=True), '01')
+
+    def test_no_hand_clears_after_drop_ms(self):
+        s = GestureOutput(drop_ms=250)
+        s.update('Open_Palm', .9, 0)
+        self.assertEqual(s.update('Open_Palm', .9, 250), '01')
+        # Hand lost: within drop_ms holds previous '01'
+        self.assertEqual(s.update('No_hand', 0.0, 300, has_hand=False), '01')
+        self.assertEqual(s.update('No_hand', 0.0, 549, has_hand=False), '01')
+        # Hand lost sustained >= drop_ms clears to '00'
+        self.assertEqual(s.update('No_hand', 0.0, 550, has_hand=False), '00')
+        # After clearing to '00', reacquisition requires full dwell_ms
+        self.assertEqual(s.update('Open_Palm', .9, 600, has_hand=True), '00')
+        self.assertEqual(s.update('Open_Palm', .9, 850, has_hand=True), '01')
 
     def test_long_gap_resets(self):
         s = GestureOutput()
