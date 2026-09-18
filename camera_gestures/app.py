@@ -16,8 +16,10 @@ def main():
     parser.add_argument('--model', type=Path, default=MODEL)
     parser.add_argument('--threshold', type=float, default=.7)
     parser.add_argument('--dwell-ms', type=int, default=250)
+    parser.add_argument('--drop-ms', type=int, default=None)
+    parser.add_argument('--changes-only', action='store_true', help='Log to CSV only when output code changes (default logs all frames)')
     args = parser.parse_args()
-    state = GestureOutput(args.threshold, args.dwell_ms)
+    state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
     if not args.model.is_file():
         parser.error('Model missing. Run: python -m camera_gestures.download_model')
     import cv2
@@ -43,7 +45,9 @@ def main():
                         mediapipe=mp.__version__, opencv=cv2.__version__, camera=args.camera,
                         width=cap.get(cv2.CAP_PROP_FRAME_WIDTH), height=cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
                         reported_fps=cap.get(cv2.CAP_PROP_FPS), threshold=args.threshold,
-                        dwell_ms=args.dwell_ms, timestamp='monotonic frame receipt, milliseconds',
+                        dwell_ms=args.dwell_ms, drop_ms=state.drop_ms,
+                        log_mode='changes_only' if args.changes_only else 'all_frames',
+                        timestamp='monotonic frame receipt, milliseconds',
                         model=str(args.model.resolve()))
         logs.joinpath(stem+'.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
         with logs.joinpath(stem+'.csv').open('w', newline='', encoding='utf-8') as f, mp.tasks.vision.GestureRecognizer.create_from_options(options) as recognizer:
@@ -51,9 +55,10 @@ def main():
             writer.writerow(['receipt_ms', 'gesture', 'score', 'output', 'inference_ms'])
             def emit(timestamp, gesture, score, code, inference):
                 nonlocal previous
-                if code != previous:
-                    writer.writerow([timestamp, gesture, score, code, round(inference, 2)])
+                if not args.changes_only or code != previous:
+                    writer.writerow([timestamp, gesture, round(score, 4), code, round(inference, 2)])
                     f.flush()
+                if code != previous:
                     print(f'{timestamp} ms | {gesture} | output={code}', flush=True)
                     previous = code
             emit(0, 'startup', 0, '00', 0)

@@ -81,8 +81,8 @@ git pull --ff-only
 ## ใช้งาน
 - แบมือ `Open_Palm`: `01`
 - กำมือ `Closed_Fist`: `10`
-- ไม่พบมือ ท่าอื่น หรือคะแนนต่ำ: `00`
-- เปลี่ยนท่าระหว่างกำกับแบ: `00` ระหว่างรอท่าคงที่
+- ไม่พบมือ ท่าอื่น หรือคะแนนต่ำเกินเวลา: `00`
+- เปลี่ยนท่าระหว่างกำกับแบ: ค้างค่าเดิมไว้จนกว่าท่าใหม่จะนิ่งครบ dwell time (ไม่ตัดเป็น 00 ระหว่างรอ)
 - รอท่าเดิมต่อเนื่อง 250 ms และ score >=0.7 ก่อนออก `01`/`10`; ค่าเริ่มทดลอง ปรับได้
 - `Q` หรือ `Esc` ปิดโปรแกรม
 - แสดงจุดมือ ภาพกลับซ้ายขวาเหมือนกระจก รหัส และเวลาประมวลผลโมเดล (ไม่ใช่ latency ทั้งระบบ)
@@ -90,18 +90,19 @@ git pull --ff-only
 
 ```powershell
 .\.venv\Scripts\python.exe -m camera_gestures.app --camera 1
-.\.venv\Scripts\python.exe -m camera_gestures.app --threshold 0.8 --dwell-ms 350
+.\.venv\Scripts\python.exe -m camera_gestures.app --threshold 0.8 --dwell-ms 350 --drop-ms 300
+.\.venv\Scripts\python.exe -m camera_gestures.app --changes-only
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 ถ้าเปิดกล้องไม่ได้: ปิด Camera/Teams/Zoom ตรวจ Settings > Privacy & security > Camera และสิทธิ์ desktop apps แล้วลอง camera index อื่น
 
 ## Log และข้อจำกัด
-`logs/` มี CSV เฉพาะตอน output เปลี่ยน รวมเริ่ม/จบ และ JSON ข้อมูล environment/config ต่อ session รหัสเป็นข้อความสองหลัก หากเปิดใน Excel ให้ตั้งคอลัมน์เป็น Text เพื่อรักษาเลข 0 นำหน้า
+`logs/` มี CSV บันทึกผลการตรวจจับทุกเฟรมเป็นค่าเริ่มต้น (หรือระบุ `--changes-only` เพื่อบันทึกเฉพาะตอนรหัสเปลี่ยน) รวมเริ่ม/จบ และ JSON ข้อมูล environment/config ต่อ session รหัสเป็นข้อความสองหลัก หากเปิดใน Excel ให้ตั้งคอลัมน์เป็น Text เพื่อรักษาเลข 0 นำหน้า
 Timestamp คือเวลารับเฟรมในโปรแกรม ไม่ใช่เวลา exposure ของกล้อง; FPS ใน JSON คือค่าที่ driver รายงาน อาจเป็น 0 หรือไม่ตรงอัตราจริง
-คะแนนไม่ใช่ probability ที่ผ่าน calibration และ log นี้ยังไม่พอวัดอัตรา tracking dropout ทุกเฟรม
+คะแนนไม่ใช่ probability ที่ผ่าน calibration แต่การบันทึกข้อมูลทุกเฟรมจะช่วยให้สามารถนำไปวิเคราะห์อัตรา tracking dropout, latency distribution และช่วงเวลา transition ของมือได้อย่างละเอียด
 
-เมื่อข้อมูลไม่ชัด output กลับ 00 ทันทีที่ประมวลผลเฟรมนั้น ผลโมเดลที่ใช้เกิน 500 ms ถูกปัดเป็น 00 ช่องว่าง observation >500 ms เริ่มรอท่าใหม่ อย่างไรก็ตาม synchronous camera read/inference อาจค้างได้ ไม่มี independent watchdog จึงห้ามใช้ต้นแบบนี้สั่งฮาร์ดแวร์โดยตรง `00` ไม่ได้หมายถึงเปิดก้ามหรือตัดไฟ
+ระหว่างเปลี่ยนท่าหรือมีสัญญาณรบกวนสั้นๆ (< drop_ms) output จะยังค้างค่าเดิมไว้ หากไม่พบมือหรือข้อมูลไม่ชัดเกิน drop_ms (เริ่มต้น 250 ms) จึงจะตัดกลับเป็น 00, ผลโมเดลที่ใช้เกิน 500 ms ถูกปัดเป็น Stale (00), ช่องว่าง observation >500 ms รีเซ็ตกลับเป็น 00 ทันที อย่างไรก็ตาม synchronous camera read/inference อาจค้างได้ ไม่มี independent watchdog จึงห้ามใช้ต้นแบบนี้สั่งฮาร์ดแวร์โดยตรง `00` ไม่ได้หมายถึงเปิดก้ามหรือตัดไฟ
 
 ## ทดลองบน ASUS — ยัง NOT RUN
 แสงคงที่ ไม่ย้อนแสง เห็นมือและข้อมือครบ เริ่มทีละมือ:
