@@ -18,8 +18,10 @@ def main():
     parser.add_argument('--model', type=Path, default=MODEL)
     parser.add_argument('--threshold', type=float, default=.7)
     parser.add_argument('--dwell-ms', type=int, default=250)
+    parser.add_argument('--drop-ms', type=int, default=None)
+    parser.add_argument('--changes-only', action='store_true', help='Log to CSV only when output code changes (default logs all frames)')
     args = parser.parse_args()
-    state = GestureOutput(args.threshold, args.dwell_ms)
+    state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
     if not args.model.is_file():
         parser.error('Model missing. Run: python -m camera_gestures.download_model')
     import cv2
@@ -48,7 +50,8 @@ def main():
                         mediapipe=mp.__version__, opencv=cv2.__version__, camera=args.camera,
                         width=cap.get(cv2.CAP_PROP_FRAME_WIDTH), height=cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
                         reported_fps=cap.get(cv2.CAP_PROP_FPS), threshold=args.threshold,
-                        dwell_ms=args.dwell_ms, timestamp='monotonic frame receipt, milliseconds',
+                        dwell_ms=args.dwell_ms, drop_ms=state.drop_ms,
+                        log_mode='changes_only' if args.changes_only else 'all_frames', timestamp='monotonic frame receipt, milliseconds',
                         model=str(args.model.resolve()),
                         model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
                         source='MediaPipe Tasks GestureRecognizer; project diagnostic wrapper',
@@ -59,9 +62,10 @@ def main():
             writer.writerow(['receipt_ms', 'gesture', 'score', 'output', 'inference_ms'])
             def emit(timestamp, gesture, score, code, inference):
                 nonlocal previous
-                if code != previous:
-                    writer.writerow([timestamp, gesture, score, code, round(inference, 2)])
+                if not args.changes_only or code != previous:
+                    writer.writerow([timestamp, gesture, round(score, 4), code, round(inference, 2)])
                     f.flush()
+                if code != previous:
                     print(f'{timestamp} ms | {gesture} | output={code}', flush=True)
                     previous = code
             emit(0, 'startup', 0, '00', 0)
@@ -81,7 +85,8 @@ def main():
                     observation = extract(result)
                     gesture, score = observation['gesture'], observation['score']
                     stale = elapsed > 500
-                    code = state.update('Stale_result' if stale else gesture, 0 if stale else score, now)
+                    code = state.update('Stale_result' if stale else gesture, 0 if stale else score, now,
+                                        has_hand=observation['hand_present'] and not stale)
                     interval = now-previous_receipt if previous_receipt is not None else None
                     previous_receipt = now
                     frame_index += 1
@@ -99,7 +104,7 @@ def main():
                              f"Hand: {observation['handedness']}  present={observation['hand_present']}",
                              f'Inference: {elapsed:.1f} ms  stale={stale}',
                              f'Label: {label}', '1=palm 2=fist 0=other N=no hand U=unlabeled',
-                             'Palm=01 Fist=10 Unknown=00 | Q/Esc quit']
+                             'Palm=01 Fist=10; holds while hand present | Q/Esc quit']
                     for i, line in enumerate(lines):
                         cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .52, (0, 255, 255), 2)
                     cv2.imshow(window, frame)
