@@ -19,7 +19,13 @@ P001: ตรวจความเป็นไปได้ของต้นแ�
 ## ต้นแบบกล้อง 2026-09-18
 - เพิ่ม P000: กล้อง/ท่ามือ/รหัส 01 10 00 พร้อม CSV และคู่มือ Windows
 - ผู้ใช้รายงานว่าเปิดใช้รุ่นแรกบน Windows ASUS ได้แล้ว แต่การอ่านมือยังไม่คงที่; ยังไม่มีหลักฐานรอบทดลองให้วิเคราะห์
-- รุ่น diagnostic เพิ่ม RAW/Filtered และ log ทุกเฟรม; unit tests 7 ผ่านบน macOS รุ่นใหม่นี้ยังไม่ทดสอบกล้อง ASUS
+- รุ่น diagnostic เพิ่ม RAW/Filtered และ log ทุกเฟรม; unit tests 10 ผ่านบน macOS รุ่นใหม่นี้ยังไม่ทดสอบกล้อง ASUS
 - ถัดไปทดลอง diagnostic บน ASUS ก่อนเชื่อมแขน ดู docs/mediapipe-team-test.md
 
 - รวมงานทีมจาก origin/main: คงรหัสยืนยันขณะยังพบมือ และ CSV ทุกเฟรม; diagnostic แสดง RAW เพื่อไม่ให้เข้าใจการค้างรหัสว่าโมเดลอ่านถูกเสมอ
+
+## ตรวจรวมอัปเดตหลัก
+- fetch แล้ว local main และ origin/main ตรงกันที่ 947bf06 ก่อนปรับเอกสาร ไม่มี remote branch อื่นหรือ open PR
+- Windows GitHub Actions ของรุ่นรวม 947bf06 ผ่าน: ติดตั้ง dependencies, unit tests, compile และ CLI help ไม่ได้ทดสอบ webcam
+- งานทีมคงรหัสระหว่างเปลี่ยนท่า + งาน RAW/Filtered/ป้ายกำกับ/JSONL รวมแล้ว
+- ปรับ README ให้ตรงกับพฤติกรรมคงรหัส ไม่เปลี่ยน logic
