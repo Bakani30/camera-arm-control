@@ -1,12 +1,14 @@
 """Local webcam preview. Outputs are display/log values, never robot commands."""
 import argparse
 import csv
+import hashlib
 import json
 import platform
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from .state import GestureOutput
+from .observation import extract
 from .download_model import MODEL
 
 
@@ -35,6 +37,9 @@ def main():
     start = time.monotonic()
     last_timestamp = -1
     previous = None
+    label = 'unlabeled'
+    frame_index = 0
+    previous_receipt = None
     window = 'Camera gestures - Q or Esc to quit'
     try:
         if not cap.isOpened():
@@ -44,9 +49,12 @@ def main():
                         width=cap.get(cv2.CAP_PROP_FRAME_WIDTH), height=cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
                         reported_fps=cap.get(cv2.CAP_PROP_FPS), threshold=args.threshold,
                         dwell_ms=args.dwell_ms, timestamp='monotonic frame receipt, milliseconds',
-                        model=str(args.model.resolve()))
+                        model=str(args.model.resolve()),
+                        model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
+                        source='MediaPipe Tasks GestureRecognizer; project diagnostic wrapper',
+                        mirrored=True, max_gap_ms=500, stale_inference_ms=500)
         logs.joinpath(stem+'.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
-        with logs.joinpath(stem+'.csv').open('w', newline='', encoding='utf-8') as f, mp.tasks.vision.GestureRecognizer.create_from_options(options) as recognizer:
+        with logs.joinpath(stem+'.frames.jsonl').open('w', encoding='utf-8') as frames, logs.joinpath(stem+'.csv').open('w', newline='', encoding='utf-8') as f, mp.tasks.vision.GestureRecognizer.create_from_options(options) as recognizer:
             writer = csv.writer(f)
             writer.writerow(['receipt_ms', 'gesture', 'score', 'output', 'inference_ms'])
             def emit(timestamp, gesture, score, code, inference):
@@ -70,24 +78,36 @@ def main():
                     tick = time.monotonic()
                     result = recognizer.recognize_for_video(image, now)
                     elapsed = (time.monotonic()-tick)*1000
-                    gesture, score = 'No_hand', 0.0
-                    if result.gestures and result.gestures[0]:
-                        top = max(result.gestures[0], key=lambda x: x.score)
-                        gesture, score = top.category_name, top.score
-                    if elapsed > 500:
-                        gesture, score = 'Stale_result', 0.0
-                    code = state.update(gesture, score, now)
+                    observation = extract(result)
+                    gesture, score = observation['gesture'], observation['score']
+                    stale = elapsed > 500
+                    code = state.update('Stale_result' if stale else gesture, 0 if stale else score, now)
+                    interval = now-previous_receipt if previous_receipt is not None else None
+                    previous_receipt = now
+                    frame_index += 1
+                    frames.write(json.dumps(dict(frame=frame_index, receipt_ms=now,
+                        inference_ms=elapsed, frame_interval_ms=interval, label=label,
+                        stale=stale, output=code, **observation), allow_nan=False)+'\n')
+                    if frame_index % 30 == 0:
+                        frames.flush()
                     emit(now, gesture, score, code, elapsed)
                     h, w = frame.shape[:2]
                     for hand in result.hand_landmarks:
                         for point in hand:
                             cv2.circle(frame, (int(point.x*w), int(point.y*h)), 4, (0, 255, 0), -1)
-                    for i, line in enumerate([f'Output: {code}', f'{gesture} score={score:.2f}',
-                                              f'Inference: {elapsed:.1f} ms', 'Palm=01  Fist=10  Unknown=00', 'Q / Esc: quit']):
-                        cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .65, (0, 255, 255), 2)
+                    lines = [f'Filtered output: {code}', f'RAW: {gesture} score={score:.2f}',
+                             f"Hand: {observation['handedness']}  present={observation['hand_present']}",
+                             f'Inference: {elapsed:.1f} ms  stale={stale}',
+                             f'Label: {label}', '1=palm 2=fist 0=other N=no hand U=unlabeled',
+                             'Palm=01 Fist=10 Unknown=00 | Q/Esc quit']
+                    for i, line in enumerate(lines):
+                        cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .52, (0, 255, 255), 2)
                     cv2.imshow(window, frame)
-                    if cv2.waitKey(1) & 0xFF in (27, ord('q')) or cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
+                    key = cv2.waitKey(1) & 0xFF
+                    if key in (27, ord('q')) or cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
                         break
+                    label = {ord('1'): 'Open_Palm', ord('2'): 'Closed_Fist', ord('0'): 'Other',
+                             ord('n'): 'No_hand', ord('u'): 'unlabeled'}.get(key, label)
             finally:
                 emit(int((time.monotonic()-start)*1000), 'shutdown', 0, '00', 0)
     finally:

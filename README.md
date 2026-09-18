@@ -6,6 +6,8 @@
 
 **ทีม Windows เริ่มที่นี่: [รายการติดตั้ง + วิธีติดตั้งทีละขั้น](docs/camera-gestures.md)**
 
+**ติดตั้งแล้ว: [ทดสอบรุ่น RAW/Filtered และส่งผลให้ทีมวางแผน](docs/mediapipe-team-test.md)**
+
 ## ทีม Windows: เริ่มต้นแบบกล้อง
 
 ติดตั้ง Git และ Python 3.11 (64-bit) แล้วเปิด PowerShell:

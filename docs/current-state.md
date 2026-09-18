@@ -18,5 +18,6 @@ P001: ตรวจความเป็นไปได้ของต้นแ�
 
 ## ต้นแบบกล้อง 2026-09-18
 - เพิ่ม P000: กล้อง/ท่ามือ/รหัส 01 10 00 พร้อม CSV และคู่มือ Windows
-- unit tests 4 ผ่าน; Windows และกล้อง ASUS NOT RUN
-- ถัดไปทดลอง P000 บน ASUS ก่อนเชื่อมแขน ดู docs/camera-gestures.md
+- ผู้ใช้รายงานว่าเปิดใช้รุ่นแรกบน Windows ASUS ได้แล้ว แต่การอ่านมือยังไม่คงที่; ยังไม่มีหลักฐานรอบทดลองให้วิเคราะห์
+- รุ่น diagnostic เพิ่ม RAW/Filtered และ log ทุกเฟรม; unit tests 7 ผ่านบน macOS รุ่นใหม่นี้ยังไม่ทดสอบกล้อง ASUS
+- ถัดไปทดลอง diagnostic บน ASUS ก่อนเชื่อมแขน ดู docs/mediapipe-team-test.md

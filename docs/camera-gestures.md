@@ -96,10 +96,12 @@ git pull --ff-only
 
 ถ้าเปิดกล้องไม่ได้: ปิด Camera/Teams/Zoom ตรวจ Settings > Privacy & security > Camera และสิทธิ์ desktop apps แล้วลอง camera index อื่น
 
+รุ่น diagnostic เพิ่ม RAW/Filtered และ log ทุกเฟรม ดู [คู่มือส่งผลทีม](mediapipe-team-test.md)
+
 ## Log และข้อจำกัด
 `logs/` มี CSV เฉพาะตอน output เปลี่ยน รวมเริ่ม/จบ และ JSON ข้อมูล environment/config ต่อ session รหัสเป็นข้อความสองหลัก หากเปิดใน Excel ให้ตั้งคอลัมน์เป็น Text เพื่อรักษาเลข 0 นำหน้า
 Timestamp คือเวลารับเฟรมในโปรแกรม ไม่ใช่เวลา exposure ของกล้อง; FPS ใน JSON คือค่าที่ driver รายงาน อาจเป็น 0 หรือไม่ตรงอัตราจริง
-คะแนนไม่ใช่ probability ที่ผ่าน calibration และ log นี้ยังไม่พอวัดอัตรา tracking dropout ทุกเฟรม
+คะแนนไม่ใช่ probability ที่ผ่าน calibration CSV เพียงอย่างเดียวไม่พอวัดอัตรา tracking dropout ทุกเฟรม; ใช้ .frames.jsonl ในรุ่น diagnostic ประกอบ
 
 เมื่อข้อมูลไม่ชัด output กลับ 00 ทันทีที่ประมวลผลเฟรมนั้น ผลโมเดลที่ใช้เกิน 500 ms ถูกปัดเป็น 00 ช่องว่าง observation >500 ms เริ่มรอท่าใหม่ อย่างไรก็ตาม synchronous camera read/inference อาจค้างได้ ไม่มี independent watchdog จึงห้ามใช้ต้นแบบนี้สั่งฮาร์ดแวร์โดยตรง `00` ไม่ได้หมายถึงเปิดก้ามหรือตัดไฟ
 
