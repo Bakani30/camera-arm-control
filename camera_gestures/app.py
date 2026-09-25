@@ -8,12 +8,17 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from .state import GestureOutput
-from .observation import extract
+from .observation import extract_selected
+from .control import HandControl
+from .depth import palm_scale
+from .display import draw
 from .download_model import MODEL
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--classifier', choices=['mediapipe', 'keypoint'], default='mediapipe')
+    parser.add_argument('--hand', choices=['Left','Right'], default='Right')
     parser.add_argument('--camera', type=int, default=0)
     parser.add_argument('--model', type=Path, default=MODEL)
     parser.add_argument('--threshold', type=float, default=.7)
@@ -30,8 +35,12 @@ def main():
     options = mp.tasks.vision.GestureRecognizerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path=str(args.model)),
         running_mode=mp.tasks.vision.RunningMode.VIDEO,
-        num_hands=1,
+        num_hands=2,
     )
+    keypoint = None
+    if args.classifier == 'keypoint':
+        from .keypoint import KeypointClassifier
+        keypoint = KeypointClassifier()
     logs = Path('logs')
     logs.mkdir(exist_ok=True)
     stem = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -39,6 +48,8 @@ def main():
     start = time.monotonic()
     last_timestamp = -1
     previous = None
+    control = HandControl(args.hand)
+    target, depth = control.target, control.depth
     label = 'unlabeled'
     frame_index = 0
     previous_receipt = None
@@ -55,7 +66,14 @@ def main():
                         model=str(args.model.resolve()),
                         model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
                         source='MediaPipe Tasks GestureRecognizer; project diagnostic wrapper',
-                        mirrored=True, max_gap_ms=500, stale_inference_ms=500)
+                        target_units='normalized screen xy, mirrored x/right y/down', target_filter_tau_ms=80, depth_filter_tau_ms=120,
+                        depth_units='relative proxy, positive toward camera, not metres',
+                        depth_formula='anchor + 1 - reference_palm_scale/current_palm_scale, clipped [-1,1]',
+                        assigned_hand=args.hand, handedness_threshold=.8,
+                        classifier=args.classifier, mirrored=True, max_gap_ms=500, stale_inference_ms=500)
+        if keypoint is not None:
+            from .keypoint import SHA256
+            metadata.update(keypoint_model_sha256=SHA256, tensorflow=__import__('tensorflow').__version__)
         logs.joinpath(stem+'.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
         with logs.joinpath(stem+'.frames.jsonl').open('w', encoding='utf-8') as frames, logs.joinpath(stem+'.csv').open('w', newline='', encoding='utf-8') as f, mp.tasks.vision.GestureRecognizer.create_from_options(options) as recognizer:
             writer = csv.writer(f)
@@ -82,17 +100,34 @@ def main():
                     tick = time.monotonic()
                     result = recognizer.recognize_for_video(image, now)
                     elapsed = (time.monotonic()-tick)*1000
-                    observation = extract(result)
+                    observation = extract_selected(result, control.side)
+                    h, w = frame.shape[:2]
+                    original_gesture = observation['gesture']
+                    original_score = observation['score']
+                    keypoint_ms = 0.0
+                    if keypoint is not None and observation['hand_present']:
+                        begin = time.monotonic()
+                        observation['gesture'], observation['score'] = keypoint.predict(observation['landmarks'], w, h)
+                        keypoint_ms = (time.monotonic()-begin)*1000
                     gesture, score = observation['gesture'], observation['score']
-                    stale = elapsed > 500
+                    stale = elapsed + keypoint_ms > 500
                     code = state.update('Stale_result' if stale else gesture, 0 if stale else score, now,
                                         has_hand=observation['hand_present'] and not stale)
                     interval = now-previous_receipt if previous_receipt is not None else None
                     previous_receipt = now
+                    wrist = tuple(observation['landmarks'][0][:2]) if observation['hand_present'] and not stale else None
+                    scale = palm_scale(observation['landmarks'], w, h) if wrist is not None else None
+                    control.update(wrist, scale, now)
                     frame_index += 1
                     frames.write(json.dumps(dict(frame=frame_index, receipt_ms=now,
                         inference_ms=elapsed, frame_interval_ms=interval, label=label,
-                        stale=stale, output=code, **observation), allow_nan=False)+'\n')
+                        stale=stale, output=code, classifier=args.classifier,
+                        depth_relative=depth.value, depth_raw=depth.raw, depth_active=depth.active,
+                        palm_scale_px=scale, depth_reference_px=depth.reference,
+                        assigned_hand=control.side, control_status=control.status,
+                        screen_target=target.position, screen_raw=target.raw, target_active=target.active,
+                        mediapipe_gesture=original_gesture, mediapipe_score=original_score,
+                        keypoint_ms=keypoint_ms, **observation), allow_nan=False)+'\n')
                     if frame_index % 30 == 0:
                         frames.flush()
                     emit(now, gesture, score, code, elapsed)
@@ -100,17 +135,28 @@ def main():
                     for hand in result.hand_landmarks:
                         for point in hand:
                             cv2.circle(frame, (int(point.x*w), int(point.y*h)), 4, (0, 255, 0), -1)
-                    lines = [f'Filtered output: {code}', f'RAW: {gesture} score={score:.2f}',
-                             f"Hand: {observation['handedness']}  present={observation['hand_present']}",
+                    lines = [f'Filtered output: {code}', f'{args.classifier}: {gesture} score={score:.2f}',
+                             f'ARM 1: {control.side} | {control.status}',
                              f'Inference: {elapsed:.1f} ms  stale={stale}',
-                             f'Label: {label}', '1=palm 2=fist 0=other N=no hand U=unlabeled',
+                             f'MediaPipe: {original_gesture} | Label: {label}', '1=palm 2=fist 0=other N=no hand U=unlabeled',
                              'Palm=01 Fist=10; holds while hand present | Q/Esc quit']
                     for i, line in enumerate(lines):
                         cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .52, (0, 255, 255), 2)
-                    cv2.imshow(window, frame)
+                    cv2.imshow(window, draw(frame, observation, stale, args.threshold, target, depth))
                     key = cv2.waitKey(1) & 0xFF
                     if key in (27, ord('q')) or cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
                         break
+                    if key == ord('c'):
+                        control.calibrate(wrist, scale, now)
+                    elif key == ord('r'):
+                        control.reset()
+                        target, depth = control.target, control.depth
+                        control.update(wrist, scale, now)
+                    elif key == ord(' '):
+                        control.pause()
+                    elif key in (ord('l'), ord('h')):
+                        control.select('Left' if key == ord('l') else 'Right')
+                        state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
                     label = {ord('1'): 'Open_Palm', ord('2'): 'Closed_Fist', ord('0'): 'Other',
                              ord('n'): 'No_hand', ord('u'): 'unlabeled'}.get(key, label)
             finally:

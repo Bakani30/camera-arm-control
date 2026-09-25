@@ -12,8 +12,14 @@ Windows + กล้อง ASUS TUF A15; ใช้ Python 3.11 แบบ 64-bit
 | ส่วนขยาย Python ของ Microsoft ใน VS Code | แนะนำเมื่อใช้ VS Code | ช่วยเลือก Python และรันโค้ด |
 | MediaPipe, OpenCV, NumPy | จำเป็น; ติดตั้งผ่านคำสั่งด้านล่าง | จำแนกท่ามือ เปิดกล้อง และจัดการภาพ |
 | โมเดล Gesture Recognizer | จำเป็น; ดาวน์โหลดผ่านคำสั่งด้านล่าง | โมเดลสำเร็จรูปสำหรับตรวจท่ามือ |
+| TensorFlow | เฉพาะเมื่อทดลองตัวจำแนก keypoint | โหลดโมเดลท่ามือของ Kazuhito แยกจากตัวหลัก; ติดตั้งใน environment แยก |
+| โมเดล keypoint ของ Kazuhito | เฉพาะเมื่อทดลอง keypoint | ดาวน์โหลดด้วยคำสั่งเฉพาะ ตรวจ SHA-256 ก่อนใช้ |
 
 ใช้ installer จากเว็บไซต์ผู้พัฒนา Python, Git และ Visual Studio Code โดยตรง ตอนติดตั้ง Python ติ๊ก **Add python.exe to PATH** และติดตั้ง Python Launcher เพื่อใช้คำสั่ง `py` เลือก Python 3.11 สำหรับต้นแบบนี้ ไม่ใช้เวอร์ชันอื่นแทนโดยอัตโนมัติ
+
+สำหรับโปรแกรมหลักใช้ Python, Git (หรือ ZIP), dependencies จาก `requirements.txt` และโมเดล Gesture Recognizer เท่านั้น
+
+ทดลองตัวจำแนก keypoint เพิ่มเติม ให้สร้าง environment แยก `.venv-keypoint` และติดตั้ง `requirements-keypoint.txt`; TensorFlow ใช้พื้นที่และเวลาติดตั้งเพิ่ม ไม่กระทบ environment หลัก
 
 ยังไม่ต้องติดตั้ง GitHub Desktop, CUDA, Arduino IDE หรือซิม ส่วนผู้วางแผน/แจกงานใช้ GitHub ผ่านเบราว์เซอร์ได้ ไม่ต้องติดตั้งชุดพัฒนาถ้าไม่ได้รันโปรแกรม
 
@@ -53,6 +59,19 @@ py -3.11 -m venv .venv
 
 สร้าง `.venv` ใหม่ในแต่ละเครื่อง ห้ามคัดลอก `.venv` ของ Mac มาใช้บน Windows ถ้าใช้ VS Code ให้เปิดโฟลเดอร์โปรเจกต์ แล้วเลือก **Python: Select Interpreter** เป็น `.venv\Scripts\python.exe`
 
+## ทดลองอ่านท่าด้วย keypoint (ไม่บังคับ)
+
+ทำหลังเปิดโปรแกรมหลักได้แล้ว ใช้ environment แยก:
+
+```powershell
+py -3.11 -m venv .venv-keypoint
+.\.venv-keypoint\Scripts\python.exe -m pip install -r requirements-keypoint.txt
+.\.venv-keypoint\Scripts\python.exe -m camera_gestures.download_keypoint
+.\.venv-keypoint\Scripts\python.exe -m camera_gestures.app --classifier keypoint
+```
+
+หากยังไม่ได้ดาวน์โหลดโมเดล MediaPipe ให้รัน `.\.venv-keypoint\Scripts\python.exe -m camera_gestures.download_model` ด้วย ปุ่ม L/H เลือกมือซ้าย/ขวา, C ตั้งอ้างอิง, R คืนศูนย์, Space พัก กล้องตรวจสองมือแต่ใช้มือด้านที่เลือกเท่านั้น ดู [คู่มือ keypoint, เข้า–ออก และการกลับเข้ากรอบ](keypoint-trial.md)
+
 ## เปิดครั้งถัดไปและอัปเดต
 
 เปิด PowerShell ในโฟลเดอร์โปรเจกต์แล้วรัน:
@@ -79,6 +98,7 @@ git pull --ff-only
 รายการนี้คือเกณฑ์ให้ทีมตรวจเอง ยังไม่ใช่ผลยืนยันจากเครื่อง ASUS
 
 ## ใช้งาน
+โปรแกรมหลักเปิดด้วย MediaPipe Gesture Recognizer ตามเดิม ไม่มี TensorFlow
 - แบมือ `Open_Palm`: `01`
 - กำมือ `Closed_Fist`: `10`
 - หากยังตรวจจับเจอมือได้ในกล้อง: ค้างค่าเดิมไว้เสมอ ไม่ตัดเป็น `00` แม้กำลังขยับนิ้วหรือทำท่าอื่น

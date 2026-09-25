@@ -29,3 +29,16 @@ P001: ตรวจความเป็นไปได้ของต้นแ�
 - Windows GitHub Actions ของรุ่นรวม 947bf06 ผ่าน: ติดตั้ง dependencies, unit tests, compile และ CLI help ไม่ได้ทดสอบ webcam
 - งานทีมคงรหัสระหว่างเปลี่ยนท่า + งาน RAW/Filtered/ป้ายกำกับ/JSONL รวมแล้ว
 - ปรับ README ให้ตรงกับพฤติกรรมคงรหัส ไม่เปลี่ยน logic
+
+## ทดลองตัวจำแนก keypoint
+เพิ่ม --classifier keypoint โดยปรับโมเดล Kazuhito เข้า Tasks pipeline และเทียบ RAW เดิมในเฟรมเดียวกัน ไม่เปลี่ยนค่าเริ่มต้น; ยังไม่ยืนยันความแม่นยำหรือความทนระยะ ดู docs/keypoint-trial.md
+
+## ขั้นเป้าหมายบนจอ
+ผู้ใช้ยืนยันว่าขั้นทดสอบท่าผ่านแล้ว (user-reported; ยังไม่มี benchmark ที่ติดป้ายครบ) เพิ่มกรอบมือ/ชื่อท่าและ target 2D พร้อม C/Space และ pause on loss; unit tests 15 ผ่าน การวาด overlay ผ่าน รอทดสอบการควบคุมจริง ไม่มีคำสั่งหุ่นยนต์
+
+ผู้ใช้ยืนยัน XY ผ่านตามการทดลอง; เพิ่ม depth proxy จากขนาดฝ่ามือ พร้อมแถบและ logging, tests รวม 18 ผ่าน รอทดลองเข้า–ออก/กำ–แบ/เอียงบนกล้องจริง ยังไม่ใช่ metric depth
+
+เพิ่ม selected-hand (คนเดียว Left/Right) และ HandControl: auto-reanchor XYZ ในเฟรมแรกหลังกลับเข้าโดยรักษาเป้าหมาย, C rebase, R reset XYZ, Space manual pause; tests 21 ผ่านบน macOS ยังรอทดสอบกล้องกรณีสองมือ/กลับเข้า
+
+## อัปเดตเตรียมแจกทีม 2026-09-25
+คู่มือติดตั้งเพิ่มรายการ TensorFlow และ keypoint model แบบ optional แยก venv จาก environment หลัก พร้อม controls L/H/C/R/Space; main camera setup ครบกรอบมือ, XY/depth, auto-reanchor, side selection

@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/Kazuhito00/hand-gesture-recognition-using-mediapipe",
+  "commit": "19311a68b16b42d3ee89e505e3f185693dbd7147",
+  "model_path": "model/keypoint_classifier/keypoint_classifier.tflite",
+  "sha256": "de646612f72941523d01ddb8cff8685ded1781f1a3b254eb5674c5f616782580"
+}

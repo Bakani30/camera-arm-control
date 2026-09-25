@@ -6,7 +6,7 @@
 
 **ทีม Windows เริ่มที่นี่: [รายการติดตั้ง + วิธีติดตั้งทีละขั้น](docs/camera-gestures.md)**
 
-**ติดตั้งแล้ว: [ทดสอบรุ่น RAW/Filtered และส่งผลให้ทีมวางแผน](docs/mediapipe-team-test.md)**
+**ติดตั้งแล้ว: [ทดสอบรุ่น RAW/Filtered](docs/mediapipe-team-test.md) · [ทดลอง keypoint, ระยะ และควบคุมเป้าหมาย](docs/keypoint-trial.md)**
 
 ## ทีม Windows: เริ่มต้นแบบกล้อง
 
