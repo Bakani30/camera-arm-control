@@ -1,27 +1,31 @@
 # Agent guide — Camera Arm Control
 
 ## อ่านตามงาน
-เริ่มจาก README.md และ docs/current-state.md แล้วอ่านเฉพาะเอกสารที่เกี่ยวข้อง
+เริ่มจาก docs/roadmap.md (ภาพรวม) และ docs/current-state.md แล้วหาโรลของผู้ใช้ใน docs/team/roster.md และอ่านการ์ดโรลใน docs/team/roles.md ก่อนอ่านเอกสารอื่นที่เกี่ยวข้อง
 
 | งาน | แหล่งหลัก | วิธีทำ |
 |---|---|---|
-| เป้าหมาย/สโคป/เสนออาจารย์ | docs/research/03-DECISIONS-GLOSSARY.md และ 01-RESEARCH-MASTER.md | .agents/skills/research-workflow/SKILL.md |
-| แบ่งงาน/รวมผล/ส่งต่อ | docs/tasks/ และ docs/current-state.md | .agents/skills/agent-orchestration/SKILL.md |
-| ออกแบบหรือสรุปการทดลอง | docs/research/02-EXPERIMENTS-ROADMAP.md | .agents/skills/experiment-evidence/SKILL.md |
+| ภาพรวม/สโคป/เส้นเวลา | docs/roadmap.md และ docs/research/03-DECISIONS-GLOSSARY.md | .agents/skills/research-workflow/SKILL.md |
+| โรล/การทำงานร่วมกัน | docs/team/ | docs/team/working-agreement.md |
+| สัญญาข้อมูลระหว่างเลน | docs/interfaces/ | เปลี่ยนได้วันจันทร์ผ่านโรล C |
+| แบ่งงาน/รวมผล/ส่งต่อ | docs/backlog.md, docs/tasks/ และ docs/current-state.md | .agents/skills/agent-orchestration/SKILL.md |
+| ออกแบบหรือสรุปการทดลอง | docs/roadmap.md ข้อ 7 และนิยามตัวชี้วัดใน docs/research/02-EXPERIMENTS-ROADMAP.md ข้อ 5 | .agents/skills/experiment-evidence/SKILL.md |
 
 คำสั่งล่าสุดของผู้ใช้และกติกา runtime เหนือกว่าไฟล์โครงการ ข้อสรุปที่ยืนยันเหนือกว่าข้อเสนอ; เอกสารเก่าหรือสิ่งที่โค้ดทำอยู่ไม่ใช่สิทธิ์เปลี่ยนเป้าหมาย หากพบความขัดแย้งให้ระบุและปรับบันทึกตามหลักฐาน ไม่อนุมานว่าข้อเสนอได้รับอนุมัติ
 
 ## ขอบเขตสำคัญ
-- กล้อง RGB ควบคุมแขน/มือกลหลายโครงสร้าง มือเดียวก่อน; มือหลายนิ้วต้องทดลองการสัมผัสวัตถุจริงในซิม
-- มีแขนจริงหนึ่งตัว งบรวม 10,000 บาท; ทีม 3 คน 6–8 เดือน มีเครื่องพิมพ์ 3D
-- สองมือคนละโมเดลเป็นส่วนต่อยอดหลังมือเดียวสำเร็จ
-- AI ช่วยการควบคุม/retargeting; วิธีเฉพาะยังไม่เลือก ไม่คืนงาน AI อ่านเอกสารสร้างโปรไฟล์เข้ามา
-- MuJoCo, SO-101, UR5e/Panda, LEAP/Allegro เป็นตัวเลือก ไม่ใช่ dependency ที่ยืนยันแล้ว
-- เครื่องแล็บ Windows 11 RTX 4090; เครื่องที่ agent รันอาจเป็นคนละเครื่อง
+- กล้อง RGB ตัวเดียว มือเดียว; โจทย์หลักคือแปลงสเกลมือไปยังแขนต่างขนาดให้แม่นและสั่งง่าย (D17–D21)
+- แขนสองขนาด: แขนจริงขนาดเล็ก (จริง + ซิม) และแขนอุตสาหกรรมในซิม; มือหลายนิ้วในซิมคุมทีละนิ้วเป็นระยะที่สอง และต้องทดลองการสัมผัสวัตถุจริงในซิม
+- **ไม่มี AI ในโปรเจค (D22)** ห้ามเพิ่มส่วน learning/AI เข้าระบบโดยไม่มี decision ใหม่
+- มีแขนจริงหนึ่งตัว งบรวม 10,000 บาท; ทีม 3 คนแบบเลน (D23); ส่งความคืบหน้า ม.ค. 2027, ส่งทั้งหมดปลาย เม.ย. 2027
+- สองมือคนละโมเดลเป็น stretch นอกเส้นเวลาส่ง
+- MuJoCo, SO-101, UR5e, LEAP เป็นตัวเลือก ไม่ใช่ dependency ที่ยืนยันแล้ว จนกว่า P001/P005 จะปิด
+- ทุกคนในทีมมีเครื่อง Windows ที่รันซิมและมีกล้อง; เครื่องที่ agent รันอาจเป็นคนละเครื่อง
 - ไม่อ้างรองรับทุกแขนกล ไม่อ้างชนะจอย ไม่เอาผลซิมแทนผลฮาร์ดแวร์
 
 ## การทำงาน
-- ระบุผลที่ต้องได้และวิธีตรวจ เริ่มจาก baseline ก่อนเลือกการเรียนรู้
+- ระบุผลที่ต้องได้และวิธีตรวจ เริ่มจาก baseline
+- ทำงานในเลนของโรลผู้ใช้; ข้อมูลข้ามเลนผ่านภาษากลางใน docs/interfaces/ เท่านั้น ทดสอบด้วยของจำลอง (replay, คำสั่งสคริปต์) แทนการรอเลนอื่น
 - แยก capture/perception, calibration/retargeting, constraints, adapters และ logging ตามหน้าที่ ไม่เพิ่ม framework ล่วงหน้า
 - ก่อนเชื่อมส่วนควบคุมให้ตกลง coordinate frame, units, timestamp, handedness, joint order/limits และ tracking-loss policy
 - การทดสอบฮาร์ดแวร์ต้องมีผู้ควบคุมหน้างาน ระบุพื้นที่/ความเร็ว/วิธีหยุดที่ตรวจแล้ว; การผ่านในซิมไม่อนุญาตให้ขยับเครื่องจริงโดยอัตโนมัติ

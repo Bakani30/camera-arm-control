@@ -1,6 +1,8 @@
 # การพัฒนาระบบควบคุมแขนกลผ่านกล้อง
 
-ฐานงานร่วมสำหรับทีมและ AI · 2026-09-18
+ฐานงานร่วมสำหรับทีมและ AI · อัปเดต 2026-10-22
+
+**ทีมเริ่มที่นี่:** [ภาพรวมโปรเจค + เส้นเวลา](docs/roadmap.md) → [ใครถือโรลไหน](docs/team/roster.md) → [การ์ดโรล A/B/C](docs/team/roles.md) → [วิธีทำงานร่วมกัน](docs/team/working-agreement.md) · ตั้งค่า Claude ให้เหมือนกันทั้งทีม: [docs/agent-setup.md](docs/agent-setup.md)
 
 สถานะ: main รวมการคงรหัสของทีมกับ RAW/Filtered และ log ทุกเฟรมแล้ว Windows CI ผ่านในรุ่นรวม 947bf06 ผู้ใช้รายงานรุ่นแรกเปิดบน ASUS ได้; รุ่นรวมยังรอผลทดลองกล้องจริง ไม่เชื่อมแขน
 
@@ -32,13 +34,15 @@ Repository เป็น Private ต้องได้รับสิทธิ์
 ## เริ่มใช้งาน
 1. เปิดโฟลเดอร์นี้เป็น workspace แล้วอ่าน [AGENTS.md](AGENTS.md)
 2. อ่าน [สถานะปัจจุบัน](docs/current-state.md) และ [ข้อสรุปโครงการ](docs/research/03-DECISIONS-GLOSSARY.md)
-3. เลือกงานจาก [backlog](docs/backlog.md); งานแรกเตรียมไว้ใน [P001](docs/tasks/P001-feasibility.md)
+3. เลือกงานของโรลตัวเองจาก [backlog](docs/backlog.md)
 4. อ่าน skill ที่ตรงกับงานจาก AGENTS; ทำงานเฉพาะที่ได้รับมอบหมาย
 
 เอกสารวิจัยฉบับเต็ม: [Research master](docs/research/01-RESEARCH-MASTER.md) · [แผนทดลอง](docs/research/02-EXPERIMENTS-ROADMAP.md) · [สรุปอาจารย์](docs/research/04-ADVISOR-SUMMARY.md)
 
 ## โครงสร้าง
-- `AGENTS.md`: กติกาและแผนที่เอกสารสำหรับทุก agent
+- `AGENTS.md`, `CLAUDE.md`: กติกาและแผนที่เอกสารสำหรับทุก agent
+- `.claude/`: ปลั๊กอิน สิทธิ์ และสกิลที่ทีมใช้ร่วมกัน ดู docs/agent-setup.md
+- `docs/roadmap.md`, `docs/team/`, `docs/interfaces/`: ภาพรวม โรล และภาษากลาง
 - `.agents/skills/`: วิธีทำงานเฉพาะโครงการ ใช้ SKILL.md ตามมาตรฐาน
 - `docs/research/`: ฐานข้อกำหนดวิจัยที่ย้ายมาจาก research-handoff
 - `docs/current-state.md`: สิ่งที่ทำแล้วจริงและสิ่งที่ยังไม่รู้
