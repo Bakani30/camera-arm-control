@@ -2,7 +2,7 @@
 ไฟล์นี้คือการตั้งค่าที่สกิล `to-spec`, `to-tickets`, `triage`, `spec-review`, `wayfinder` และ `implement` อ่าน (แทนคำสั่ง `/setup-matt-pocock-skills`)
 
 ## ที่เก็บงาน
-- GitHub Issues ของ `Bakani30/camera-arm-control` (repo private)
+- GitHub Issues ของ `Bakani30/camera-arm-control` (repo public: issue และ comment ทุกคนเห็นได้)
 - ใช้ `gh` CLI: `gh issue list`, `gh issue view <n>`, `gh issue create`, `gh pr view <n>`
 - ทุก issue ต้องเขียนว่า "เสร็จแปลว่าอะไร" และระบุโรลด้วย label เลน
 - การสร้าง issue, comment หรือเปลี่ยน label เป็นการเผยแพร่ ให้ถามผู้ใช้ก่อนทุกครั้ง

@@ -23,7 +23,7 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m camera_gestures.app
 ```
 
-Repository เป็น Private ต้องได้รับสิทธิ์และเข้าสู่ระบบ GitHub ก่อน clone หรือใช้ Code > Download ZIP แล้วแตกไฟล์ เปิด PowerShell ในโฟลเดอร์และเริ่มที่คำสั่งสร้าง venv
+Repository เป็น Public clone ได้โดยไม่ต้องขอสิทธิ์ แต่การ push branch ต้องเป็น collaborator ของ repo หรือใช้ Code > Download ZIP แล้วแตกไฟล์ เปิด PowerShell ในโฟลเดอร์และเริ่มที่คำสั่งสร้าง venv
 
 แบมือ `01` · กำมือ `10` หลังยืนยันท่า · คงรหัสล่าสุดระหว่างเปลี่ยนท่าหรือท่าไม่ชัดขณะยังพบมือ · ไม่พบมือครบช่วง drop จึงกลับ `00` · กด Q/Esc เพื่อออก
 
