@@ -105,3 +105,11 @@
 - 2026-10-28 ผู้ใช้เลือก**แบบ B (ทรง 4.1, cad/shell_v1)** เป็นแขนจริง แทนชิ้น SO-101 ดัดแปลง (แบบ A) โดยเก็บ A ไว้เป็นแผนสำรองเพราะจลนศาสตร์เดียวกัน; ลำดับงาน: ข้อมือ+ก้ามพร้อมพิมพ์ก่อน แล้วลิงก์/ฐาน; ช่อง servo ข้อมือ/ก้ามออกแบบให้ใส่ได้ทั้ง STS3032 และ MG90S จนกว่าจะตัดสินงบ D24
 - 2026-10-29 shell v1 แบบ B: ข้อมือ+ก้าม (wrist_gripper_v1) และเสา/ลิงก์/ท่อนแขนท่อกลม (links_v1) พร้อมพิมพ์ในไฟล์ 14 ชิ้น ใน cad/shell_v1/out/print/; FK ตรง spec, กลไกก้ามไม่ชน 0–57 mm, ข้อจำกัดชนเดิม (ไหล่ −100°, ศอก ≥90°); ยังไม่ทดลองพิมพ์ ยังไม่วัด servo/horn จริง ฐาน/ขายังเป็น concept
 - 2026-10-29 shell v1 ครบทั้งแขน 22 ชิ้นพิมพ์ (≤ 1,073 g ถ้าพิมพ์ตัน) รวมฐาน Ø150 บน lazy susan 4", ขา 5 ชิ้นเสียบ, ถาดบอร์ดรูพรุน และทางเดินสาย (วงแหวนให้สายพัน ±180° ใต้จานหมุน, ช่องรัดสาย, รูร้อยสาย/แจ็ก/USB ที่ถัง); check: FK ตรง, ก้ามไม่ชน, ศอก ≥80° ชนฐานตอนไหล่ 0°, ไหล่ −100° ชนเสา; ยังไม่ทดลองพิมพ์ ยังไม่วัดของจริง (MEASURE ในโค้ด)
+
+## Replay test จาก log กล้อง 2026-10-29
+- เพิ่ม camera_gestures/replay.py: ป้อน landmarks/gesture/score/stale/receipt_ms จาก frames.jsonl ผ่าน logic หลัง MediaPipe ชุดเดียวกับแอป (แยกเป็น camera_gestures/pipeline.py: step + handle_key, app.py เรียกตัวเดียวกัน ไม่เปลี่ยนพฤติกรรม) ไม่ใช้กล้องและไม่รัน MediaPipe
+- log ไม่บันทึกปุ่ม: replay กู้ C/R/Space/L/H จาก control_status และ screen_raw; ใช้ได้กับ log รูปแบบ HandControl (20260918T215925900313Z ขึ้นไป) log เก่ากว่าไม่มี control_status
+- replay log 20260918T215925900313Z เต็ม 2858 เฟรมตรงกับ output/screen_target/screen_raw/depth/status ที่บันทึกไว้ 0 mismatch (tolerance 1e-9) เลยใช้ค่าใน log เป็น golden โดยไม่ต้องบันทึกค่าใหม่
+- fixture ใน tests/fixtures/: replay_start_loss (เฟรม 1–345: เริ่มแอป, pause, C, มือหาย→00, กลับเข้า reanchor) และ replay_resume_reanchor (เฟรม 1480–1600 เริ่มกลางไฟล์, มือหายสองรอบ) เก็บเฉพาะ landmarks x/y และค่าที่ใช้เทียบ ไม่มี path เครื่องหรือภาพ
+- tests/test_replay.py: ตรงกับ log, 00 หลัง drop window, reanchor ไม่กระโดด; unit tests รวม 55 ผ่านบน macOS Python 3.11.15 (หลังรวม main ที่มี arm_spec) ยังไม่เห็นผลบน Windows CI
+- ข้อจำกัด: ทดสอบ logic หลัง MediaPipe เท่านั้น ไม่ใช่หลักฐานว่ากล้อง/โมเดลอ่านมือได้ดี; fixture มาจากเครื่อง Mac (keypoint classifier) ไม่ใช่ ASUS
