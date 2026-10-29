@@ -29,7 +29,7 @@ G = dict(clear=0.3, wall=2.4,
          link=40.0, follower_off=(-5.0, 13.0),  # four-bar: link length, follower pivot from the gear axis
                                                   # (x back, z outward): keeps the two links >= 10 mm apart
          finger_inset=12.0, finger_t=9.0, finger_len=50.0,
-         rib_h=1.2)
+         rib_h=1.2, pad_recess=1.5)
 COLORS = dict(white=S.WHITE, grey=S.GREY, black=S.BLACK, steel=S.STEEL)
 
 
@@ -103,17 +103,24 @@ def micro_servo(base, axis, length_dir):
 
 
 # ---------------------------------------------------------------- wrist (child of wrist_flex)
+def wrist_horn_face():
+    """y of the wrist's back face, which sits on the wrist-flex STS3215 horn."""
+    return S.BACK[1] + S.STS["boss"] + S.STS["horn_t"]
+
+
 def build_wrist():
+    import links_v1 as LK
     WF, WR, cy, cz = S.WF, S.WR, S.WR.y, S.WR.z
     d, c, w = MS, G["clear"], G["wall"]
-    y_h0 = S.BACK[1] + S.MG["boss"] + S.MG["horn_t"]           # sits on the MG996R horn
+    y_h0 = wrist_horn_face()
     y_top = cy + d["W"] / 2 + c + w
     x_b = WR.x - d["top"] - d["horn_t"]                          # roll servo case bottom
     x_ear = x_b + d["ear_lo"]                                    # ears seat on the cage front
     zc = cz - d["shaft_off"]
     case, horn, pocket, pilots = micro_servo(V(x_b, cy, cz), V(1, 0, 0), V(0, 0, 1))
 
-    hub = S.cyl_y(WF.x, WF.z, 20.0, y_h0, y_top)
+    hub_r = 25.0 if LK.BR["wrist_bearing"] else 20.0             # 25 houses the 6806 bearing
+    hub = S.cyl_y(WF.x, WF.z, hub_r, y_h0, y_top)
     neck = S.band_xz([(WF.x, WF.z), (x_b - c - w, cz - 3)], 14.0, y_h0, y_top)
     cage = S.box(x_b - c - w, x_ear, cy - d["W"] / 2 - c - w, y_top,
                  zc - d["ear_w"] / 2 - 1, zc + d["ear_w"] / 2 + 1)
@@ -123,19 +130,27 @@ def build_wrist():
     body = body.cut(pocket)
     for p in pilots:
         body = body.cut(p)
-    # horn interface: centre access + 4 x M2 through the hub with counterbores (horn hole radius MEASURE)
+    # horn interface: centre access + the STS3215 horn pattern (4 x M3 on r 7, MEASURE) with counterbores
     body = body.cut(hole_y(WF.x, WF.z, 6.5, y_h0 - 1, y_top + 1))
     for k in range(4):
         a = math.radians(45 + 90 * k)
-        hx, hz = WF.x + 7.5 * math.cos(a), WF.z + 7.5 * math.sin(a)
-        body = body.cut(hole_y(hx, hz, G["m2_free"], y_h0 - 1, y_top + 1))
-        body = body.cut(hole_y(hx, hz, 4.2, y_h0 + 4, y_top + 1))
+        hx, hz = WF.x + 7.0 * math.cos(a), WF.z + 7.0 * math.sin(a)
+        body = body.cut(hole_y(hx, hz, 3.4, y_h0 - 1, y_top + 1))
+        body = body.cut(hole_y(hx, hz, 6.0, y_h0 + (LK.BR["w"] + 3.5 if LK.BR["wrist_bearing"] else 4.0), y_top + 1))
+    if LK.BR["wrist_bearing"]:
+        body = body.cut(LK.bearing_seat((WF.x, WF.z), y_h0))
+    # calibration pin on the forearm axis direction, matching the hole in links_v1.build_forearm
+    ahead = (WF.x + (WF.x - S.EL.x), WF.z + (WF.z - S.EL.z))
+    body = body.cut(LK.pin_hole(LK.toward((WF.x, WF.z), ahead, LK.BR["pin_r"]), y_h0 - 1, y_top + 1))
     # zip-tie slot on the neck for the roll and gripper cables
     nx, nz = (WF.x + x_b) / 2, (WF.z + cz - 3) / 2 - 8
     body = body.cut(S.box(nx - 4, nx + 4, y_h0 - 1, y_top + 1, nz - 0.9, nz + 0.9))
     # servo cable leaves the far end of the case
     body = body.cut(S.box(x_b - c - w - 1, x_b + 8, cy - 3, cy + 3, zc - d["L"] / 2 - c - w - 2, zc - d["L"] / 2))
-    return {"wrist": (body, S.WHITE), "servo_wrist_roll": (case, S.BLACK), "horn_wrist_roll": (horn, S.STEEL)}
+    out = {"wrist": (body, S.WHITE), "servo_wrist_roll": (case, S.BLACK), "horn_wrist_roll": (horn, S.STEEL)}
+    if LK.BR["wrist_bearing"]:
+        out["bearing_wrist_flex"] = (LK.bearing_dummy((WF.x, WF.z), y_h0), S.STEEL)
+    return out
 
 
 # ---------------------------------------------------------------- gripper (child of wrist_roll)
@@ -153,6 +168,10 @@ def layout():
     L["cover"] = (L["link"][1] + 0.5, L["link"][1] + 3.0)
     L["root"] = (L["gear"][0] + 0.2, L["gear"][1] - 0.2)
     L["palm"] = (cy - 16.7, L["y_ear"])
+    # back four-bar (passive) behind the palm: pivot bosses, link layer, finger back-root layer
+    L["boss"] = (L["palm"][0] - 5.5, L["palm"][0] + 0.5)
+    L["blink"] = (L["palm"][0] - 9.0, L["palm"][0] - 5.5)
+    L["broot"] = (L["palm"][0] - 5.3, L["palm"][0] - 1.9)
     L["posts"] = [(L["gx"] + 14.0, cz)]
     return L
 
@@ -185,8 +204,14 @@ def build_gripper(phi_deg=34.0):
         palm = palm.cut(p)
     for px, pz in L["posts"]:
         palm = palm.cut(hole_y(px, pz, G["m2_pilot"], L["cover"][0] - 8, L["cover"][0] + 1))
-    for px, pz in L["fol"].values():
-        palm = palm.cut(hole_y(px, pz, G["pin_press"], L["palm"][1] - 8, L["palm"][1] + 1))
+    back_pivots = [(gx, L["g_up"]), (gx, L["g_dn"])] + list(L["fol"].values())
+    for px, pz in back_pivots:
+        palm = palm.fuse(S.cyl_y(px, pz, 4.0, L["boss"][0], L["boss"][1]))
+    palm = palm.removeSplitter()
+    for px, pz in L["fol"].values():                          # follower pins run through the palm
+        palm = palm.cut(hole_y(px, pz, G["pin_press"], L["boss"][0] - 1, L["palm"][1] + 1))
+    for px, pz in back_pivots[:2]:                             # stub pins on the servo axis line
+        palm = palm.cut(hole_y(px, pz, G["pin_press"], L["boss"][0] - 1, L["palm"][0] + 2))
     roll_access = Part.makeCylinder(3.25, 60, V(L["x0"] - 1, cy, cz), V(1, 0, 0))
     palm = palm.cut(roll_access)
     for k in range(4):                                         # horn pattern MEASURE
@@ -225,6 +250,17 @@ def build_gripper(phi_deg=34.0):
             fol = fol.cut(hole_y(px, pz, G["pin_free"], L["link"][0] - 1, L["link"][1] + 1))
         parts["gripper_follower_" + name] = (fol, S.GREY)
 
+        # back pair: passive copies of crank and follower behind the palm, so the finger is held
+        # on both sides and resists twisting (review item 6)
+        for kind, (p0, p1) in (("backcrank", ((gx, gz), end)), ("backfollower", (fp, fend))):
+            b = S.band_xz([p0, p1], 4.0, L["blink"][0], L["blink"][1])
+            for px, pz in (p0, p1):
+                b = b.fuse(S.cyl_y(px, pz, 4.5, L["blink"][0], L["blink"][1]))
+            b = b.removeSplitter()
+            for px, pz in (p0, p1):
+                b = b.cut(hole_y(px, pz, G["pin_free"], L["blink"][0] - 1, L["blink"][1] + 1))
+            parts["gripper_%s_%s" % (kind, name)] = (b, S.GREY)
+
         # finger: root plate under both link ends, then a tall plate forward of the palm
         ax, az = end
         bx, bz = fend
@@ -232,25 +268,36 @@ def build_gripper(phi_deg=34.0):
         outer = inner + side * G["finger_t"]
         x_start = ax + 7.0
         root = S.band_xz([(ax, az), (bx, bz)], 5.0, L["root"][0], L["root"][1])
-        web = S.box(ax, x_start + 12, L["root"][0], L["root"][1], min(inner, az + 5 * side), max(inner, az + 5 * side))
+        broot = S.band_xz([(ax, az), (bx, bz)], 5.0, L["broot"][0], L["broot"][1])
+        zlo, zhi = min(inner, az + 5 * side), max(inner, az + 5 * side)
+        web = S.box(ax, x_start + 12, L["root"][0], L["root"][1], zlo, zhi)
+        # strut from the back root to the plate: only as wide as the root needs, to keep the tip light
+        web = web.fuse(S.box(ax - 1, x_start + 5, L["broot"][0], cy - 9, zlo, zhi))
         plate = S.box(x_start, x_start + G["finger_len"], cy - 10, L["root"][1], min(inner, outer), max(inner, outer))
-        finger = S.soften(root.fuse(web).fuse(plate).removeSplitter(), 1.0)
+        finger = S.soften(root.fuse(broot).fuse(web).fuse(plate).removeSplitter(), 1.0)
         # V lightening groove on the outer face (4.1 look)
         groove = poly_xz([(x_start + 12, outer), (x_start + 40, outer), (x_start + 26, outer - side * 3.5)],
                          cy - 4, L["root"][1] - 3)
         finger = finger.cut(groove)
-        # grip texture near the tip: comb ribs on the upper finger, saw teeth on the lower one
-        tip0 = x_start + G["finger_len"] - 24
-        for k in range(10):
-            rx = tip0 + k * 2.4
-            if side > 0:
-                tooth = S.box(rx, rx + 1.2, cy - 10, L["root"][1], inner - G["rib_h"], inner)
-            else:
-                tooth = poly_xz([(rx, inner), (rx + 2.4, inner), (rx + 2.4, inner + G["rib_h"])], cy - 10, L["root"][1])
-            finger = finger.fuse(tooth)
+        # grip pad (review item 6): a recess at the tip takes a TPU pad printed separately; the pad
+        # carries the 4.1-style texture (comb on the upper finger, saw teeth on the lower one)
+        tip0, tip1 = x_start + G["finger_len"] - 25, x_start + G["finger_len"] - 1
+        py0, py1 = cy - 8.5, L["root"][1] - 1.5
+        recess_z = (inner, inner + side * G["pad_recess"])
+        finger = finger.cut(S.box(tip0, tip1, py0, py1, min(recess_z), max(recess_z)))
         for px, pz in (end, fend):
-            finger = finger.cut(hole_y(px, pz, G["pin_free"], L["root"][0] - 1, L["root"][1] + 1))
+            finger = finger.cut(hole_y(px, pz, G["pin_free"], L["broot"][0] - 1, L["root"][1] + 1))
         parts["gripper_finger_" + name] = (finger.removeSplitter(), S.WHITE)
+        g = 0.15
+        pad = S.box(tip0 + g, tip1 - g, py0 + g, py1 - g, min(recess_z), max(recess_z))
+        for k in range(10):
+            rx = tip0 + 0.5 + k * 2.4
+            if side > 0:
+                tooth = S.box(rx, rx + 1.2, py0 + g, py1 - g, inner - G["rib_h"], inner)
+            else:
+                tooth = poly_xz([(rx, inner), (rx + 2.4, inner), (rx + 2.4, inner + G["rib_h"])], py0 + g, py1 - g)
+            pad = pad.fuse(tooth)
+        parts["gripper_pad_" + name] = (pad.removeSplitter(), (0.18, 0.19, 0.21))
 
     # cover plate: rounded outline over gears and pins, held by two posts and the pins
     pts = [L["fol"][-1], (gx + 6, L["g_dn"] - 3), L["posts"][0], (gx + 6, L["g_up"] + 3), L["fol"][1]]
@@ -268,12 +315,15 @@ def build_gripper(phi_deg=34.0):
 
     # steel pins (not printed)
     pins = None
-    specs = [(*L["fol"][1], L["palm"][1] - 8, L["cover"][1]), (*L["fol"][-1], L["palm"][1] - 8, L["cover"][1]),
-             (gx, L["g_dn"], L["gear"][0], L["cover"][1])]
+    specs = [(*L["fol"][1], L["blink"][0], L["cover"][1]), (*L["fol"][-1], L["blink"][0], L["cover"][1]),
+             (gx, L["g_dn"], L["gear"][0], L["cover"][1]),
+             (gx, L["g_up"], L["blink"][0], L["palm"][0] + 2), (gx, L["g_dn"], L["blink"][0], L["palm"][0] + 2)]
     for gz, side in ((L["g_up"], 1), (L["g_dn"], -1)):
         fp = L["fol"][side]
-        specs.append((gx + G["link"] * math.cos(phi), gz + side * G["link"] * math.sin(phi), L["root"][0], L["link"][1]))
-        specs.append((fp[0] + G["link"] * math.cos(phi), fp[1] + side * G["link"] * math.sin(phi), L["root"][0], L["link"][1]))
+        for px, pz in ((gx + G["link"] * math.cos(phi), gz + side * G["link"] * math.sin(phi)),
+                       (fp[0] + G["link"] * math.cos(phi), fp[1] + side * G["link"] * math.sin(phi))):
+            specs.append((px, pz, L["root"][0], L["link"][1]))
+            specs.append((px, pz, L["blink"][0], L["broot"][1]))
     for px, pz, y0, y1 in specs:
         p = S.cyl_y(px, pz, 1.45, y0, y1)
         pins = p if pins is None else pins.fuse(p)
@@ -282,4 +332,6 @@ def build_gripper(phi_deg=34.0):
 
 
 PRINTED = ["wrist", "gripper_palm", "gripper_gear_crank_up", "gripper_gear_crank_dn", "gripper_follower_up",
-           "gripper_follower_dn", "gripper_finger_up", "gripper_finger_dn", "gripper_cover"]
+           "gripper_follower_dn", "gripper_backcrank_up", "gripper_backcrank_dn", "gripper_backfollower_up",
+           "gripper_backfollower_dn", "gripper_finger_up",
+           "gripper_finger_dn", "gripper_cover", "gripper_pad_up", "gripper_pad_dn"]   # pads in TPU

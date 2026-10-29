@@ -107,12 +107,26 @@ def build_base():
     bar = S.box(-w - 8, -w - 4, -9, 9, 16, 20)              # bridge: the zip tie loops round it
     drum = drum.fuse(wall_cut(288, bar.fuse(S.box(-w - 8, -w + 0.5, -9, -6, B["floor"], 20)).fuse(
         S.box(-w - 8, -w + 0.5, 6, 9, B["floor"], 20)))).removeSplitter()
+    # table clamp lugs behind the arm (review item 5): the CoM sits ~120 mm out when the arm reaches
+    # forward, so the back of the base is what lifts; an M6 bolt or a G-clamp pad goes through each lug
+    for deg in (144, 216):
+        lug = S.box(-2, 28, -13, 13, 0, 8)
+        # gusset stays inside x <= 8 so an M6 washer (D12) or a clamp pad sits flat round the hole
+        gusset = Part.Face(Part.makePolygon([V(0, -3, 8), V(0, -3, 20), V(8, -3, 8), V(0, -3, 8)])).extrude(V(0, 6, 0))
+        lug = S.soften(lug.fuse(gusset).removeSplitter(), 1.0)
+        lug = lug.cut(Part.makeCylinder(3.3, 20, V(18, 0, -1)))
+        drum = drum.fuse(wall_cut(deg, lug))
+    # fiducial pad at the front (review item 5): a flat face with a 0.6 mm recess for a 40 mm marker
+    pad = S.box(-4, 3, -23, 23, 6, Z_LID - 1)
+    pad = pad.cut(S.box(2.4, 4, -20.2, 20.2, 7.8, 48.2))          # 40.4 x 40.4 for a 40 mm marker
+    drum = drum.fuse(wall_cut(0, pad)).removeSplitter()
     parts["base_drum"] = (drum, S.WHITE)
 
     # ---- lid: servo top passes through, lazy-susan bottom plate screws in, cable hole
     lid = zcyl(B["r"], Z_LID, B["h"])
     lid = S.soften(lid, 1.0)
     lid = lid.cut(pan_servo_box(c, Z_LID - 1, B["h"] + 1))
+    lid = lid.cut(pan_pin_hole())
     # arm cables drop from the turntable hole (r 24, turns with the arm) into the annulus between the
     # boss (r 15) and the lazy-susan opening (r 31), wrap there over +-180 deg, and leave through
     # this fixed slot; keep a service loop of about one turn (~150 mm) in the drum
@@ -178,6 +192,11 @@ def build_base():
     parts["servo_pan"] = (case, S.BLACK)
     parts["horn_pan"] = (horn, S.STEEL)
     return parts
+
+
+def pan_pin_hole():
+    """Calibration pin at q = 0: through the turntable, the lazy-susan opening and the lid."""
+    return zcyl(1.6, Z_LID - 1, Z_TT + B["tt_t"] + 1, CX, CY + 27.0)
 
 
 def turntable():

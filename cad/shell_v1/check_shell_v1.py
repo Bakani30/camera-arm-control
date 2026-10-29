@@ -68,6 +68,28 @@ def gripper_sweep():
     return bad
 
 
+def soft_box_sweep(parts, step=10):
+    """Shoulder x elbow grid of poses the spec soft limits allow (wrist 0, pan 0): any overlap counts."""
+    lo_s, hi_s = (math.degrees(v) for v in arm_spec.soft_range(B.SPEC, "shoulder_lift"))
+    lo_e, hi_e = (math.degrees(v) for v in arm_spec.soft_range(B.SPEC, "elbow_flex"))
+    grid = lambda lo, hi: sorted({round(lo, 1), round(hi, 1), *range(int(math.ceil(lo / step) * step), int(hi) + 1, step)})
+    hits, tried = [], 0
+    for sl in grid(lo_s, hi_s):
+        for el in grid(lo_e, hi_e):
+            q = {"shoulder_lift": sl, "elbow_flex": el}
+            if arm_spec.soft_limit_problems(B.SPEC, {k: math.radians(v) for k, v in q.items()}):
+                continue                                   # the adapter never sends this pose
+            tried += 1
+            h = overlaps(parts, q)
+            if h:
+                hits.append((sl, el, sorted({a + "/" + b for a, b, v in h})[:4]))
+    print("soft-limit sweep shoulder %.0f..%.0f x elbow %.0f..%.0f step %d: %d allowed poses, %d colliding"
+          % (lo_s, hi_s, lo_e, hi_e, step, tried, len(hits)))
+    for sl, el, names in hits:
+        print("   shoulder %6.1f elbow %6.1f: %s" % (sl, el, names))
+    return len(hits)
+
+
 def main():
     parts, _ = B.build_all()
     fails = fk_check()
@@ -93,7 +115,8 @@ def main():
     for q in ({"shoulder_lift": -45, "elbow_flex": 55, "wrist_flex": 70},
               {"shoulder_lift": 30, "elbow_flex": -60, "wrist_flex": 40, "wrist_roll": 70}):
         print("combined %s: %s" % (q, overlaps(parts, q) or "clear"))
-    print("FK mismatches:", fails, "| gripper poses with overlaps:", grip_bad)
+    soft_bad = soft_box_sweep(parts)
+    print("FK mismatches:", fails, "| gripper poses with overlaps:", grip_bad, "| allowed poses with overlaps:", soft_bad)
 
 
 main()

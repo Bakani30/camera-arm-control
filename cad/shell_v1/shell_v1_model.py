@@ -30,9 +30,9 @@ P = dict(
     clearance=0.3,
     wall=3.0,
     link_t=28.0,          # link thickness along the joint axis (y)
-    ring_od=44.0,         # tube knuckle outer diameter
+    ring_od=50.0,         # tube knuckle outer diameter (houses a 6806 bearing, see links_v1)
     ring_bore=26.0,       # blind bore seen from the outside face
-    ring_floor=4.0,       # floor left on the horn side
+    ring_floor=10.5,      # bearing seat (7) + floor (3.5) on the horn side
     upper_halfwidth=19.0,
     fore_halfwidth=16.0,
     drum_d=120.0, drum_h=56.0,
@@ -241,6 +241,7 @@ CHAIN = {  # part -> the joint whose child link carries it (None = fixed base)
     "servo_elbow": "elbow_flex", "forearm_front": "elbow_flex", "forearm_back": "elbow_flex",
     "servo_wrist_flex": "elbow_flex",
     "horn_wrist_flex": "wrist_flex", "wrist": "wrist_flex", "servo_wrist_roll": "wrist_flex",
+    "bearing_shoulder": "shoulder_lift", "bearing_elbow": "shoulder_lift", "bearing_wrist_flex": "wrist_flex",
     "horn_wrist_roll": "wrist_roll",
 }
 ORDER = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
