@@ -85,3 +85,11 @@
 - เพิ่มการตั้งค่า Claude ของทีม: CLAUDE.md, .claude/settings.json, .claude/skills/ ดู docs/agent-setup.md
 - ยังไม่มีโค้ดใหม่จากการปรับนี้: mapping หน่วยเมตร, bubble, ภาษากลาง, ซิม และแขนจริง NOT IMPLEMENTED
 - ถัดไป: สัปดาห์ 0 (26–30 ต.ค.) ร่างและล็อกภาษากลาง v0.1 แล้วเริ่ม sprint 1
+
+## Replay test จาก log กล้อง 2026-10-29
+- เพิ่ม camera_gestures/replay.py: ป้อน landmarks/gesture/score/stale/receipt_ms จาก frames.jsonl ผ่าน logic หลัง MediaPipe ชุดเดียวกับแอป (แยกเป็น camera_gestures/pipeline.py: step + handle_key, app.py เรียกตัวเดียวกัน ไม่เปลี่ยนพฤติกรรม) ไม่ใช้กล้องและไม่รัน MediaPipe
+- log ไม่บันทึกปุ่ม: replay กู้ C/R/Space/L/H จาก control_status และ screen_raw; ใช้ได้กับ log รูปแบบ HandControl (20260918T215925900313Z ขึ้นไป) log เก่ากว่าไม่มี control_status
+- replay log 20260918T215925900313Z เต็ม 2858 เฟรมตรงกับ output/screen_target/screen_raw/depth/status ที่บันทึกไว้ 0 mismatch (tolerance 1e-9) เลยใช้ค่าใน log เป็น golden โดยไม่ต้องบันทึกค่าใหม่
+- fixture ใน tests/fixtures/: replay_start_loss (เฟรม 1–345: เริ่มแอป, pause, C, มือหาย→00, กลับเข้า reanchor) และ replay_resume_reanchor (เฟรม 1480–1600 เริ่มกลางไฟล์, มือหายสองรอบ) เก็บเฉพาะ landmarks x/y และค่าที่ใช้เทียบ ไม่มี path เครื่องหรือภาพ
+- tests/test_replay.py: ตรงกับ log, 00 หลัง drop window, reanchor ไม่กระโดด; unit tests รวม 26 ผ่านบน macOS Python 3.11.15 ยังไม่เห็นผลบน Windows CI
+- ข้อจำกัด: ทดสอบ logic หลัง MediaPipe เท่านั้น ไม่ใช่หลักฐานว่ากล้อง/โมเดลอ่านมือได้ดี; fixture มาจากเครื่อง Mac (keypoint classifier) ไม่ใช่ ASUS

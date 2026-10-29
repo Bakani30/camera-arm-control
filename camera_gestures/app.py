@@ -10,7 +10,7 @@ from pathlib import Path
 from .state import GestureOutput
 from .observation import extract_selected
 from .control import HandControl
-from .depth import palm_scale
+from .pipeline import STALE_MS, handle_key, step
 from .display import draw
 from .download_model import MODEL
 
@@ -110,14 +110,10 @@ def main():
                         observation['gesture'], observation['score'] = keypoint.predict(observation['landmarks'], w, h)
                         keypoint_ms = (time.monotonic()-begin)*1000
                     gesture, score = observation['gesture'], observation['score']
-                    stale = elapsed + keypoint_ms > 500
-                    code = state.update('Stale_result' if stale else gesture, 0 if stale else score, now,
-                                        has_hand=observation['hand_present'] and not stale)
+                    stale = elapsed + keypoint_ms > STALE_MS
+                    code, wrist, scale = step(state, control, observation, stale, now, w, h)
                     interval = now-previous_receipt if previous_receipt is not None else None
                     previous_receipt = now
-                    wrist = tuple(observation['landmarks'][0][:2]) if observation['hand_present'] and not stale else None
-                    scale = palm_scale(observation['landmarks'], w, h) if wrist is not None else None
-                    control.update(wrist, scale, now)
                     frame_index += 1
                     frames.write(json.dumps(dict(frame=frame_index, receipt_ms=now,
                         inference_ms=elapsed, frame_interval_ms=interval, label=label,
@@ -146,17 +142,9 @@ def main():
                     key = cv2.waitKey(1) & 0xFF
                     if key in (27, ord('q')) or cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
                         break
-                    if key == ord('c'):
-                        control.calibrate(wrist, scale, now)
-                    elif key == ord('r'):
-                        control.reset()
-                        target, depth = control.target, control.depth
-                        control.update(wrist, scale, now)
-                    elif key == ord(' '):
-                        control.pause()
-                    elif key in (ord('l'), ord('h')):
-                        control.select('Left' if key == ord('l') else 'Right')
+                    if handle_key(chr(key), control, wrist, scale, now):
                         state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
+                    target, depth = control.target, control.depth
                     label = {ord('1'): 'Open_Palm', ord('2'): 'Closed_Fist', ord('0'): 'Other',
                              ord('n'): 'No_hand', ord('u'): 'unlabeled'}.get(key, label)
             finally:
