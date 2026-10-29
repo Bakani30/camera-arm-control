@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from arm_spec import DEFAULT_SPEC, forward_kinematics, load_spec, validate
+from arm_spec import (DEFAULT_SPEC, forward_kinematics, load_spec, soft_limit_problems, soft_range,
+                      tcp_radius_m, validate)
 
 # Expected values come from sources outside arm_spec: SO-101 URDF (so101_new_calib.urdf,
 # SO-ARM100 commit a758567c39), D25/D32 in docs/research/03-DECISIONS-GLOSSARY.md and the
@@ -26,10 +27,15 @@ class SmallArmSpecV0Tests(unittest.TestCase):
         self.assertAlmostEqual(math.degrees(pan.lower), -180, delta=0.01)
         self.assertAlmostEqual(math.degrees(pan.upper), 180, delta=0.01)
 
-    def test_wrist_flex_mg996r_stays_inside_159_degree_travel(self):  # TowerPro maker answer
-        j = self.spec.joint('wrist_flex')
-        self.assertEqual(j.actuator, 'mg996r_6v')
-        self.assertLessEqual(math.degrees(j.upper - j.lower), 159.0 + 1e-6)
+    def test_arm_joints_use_sts3215_with_readback(self):  # D28; wrist_flex user choice 2026-10-29
+        for name in ('shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex'):
+            self.assertEqual(self.spec.joint(name).actuator, 'sts3215_12v', name)
+            self.assertTrue(self.spec.actuator(name)['readback'], name)
+
+    def test_wrist_flex_uses_the_urdf_range(self):
+        # top-down grasps at 20-25 cm need more than the old MG996R +-79.5deg window
+        self.assertAlmostEqual(self.spec.joint('wrist_flex').lower, -1.65806, places=5)
+        self.assertAlmostEqual(self.spec.joint('wrist_flex').upper, 1.65806, places=5)
 
     def test_wrist_roll_and_gripper_use_sts3032_with_readback(self):
         # user choice 2026-10-28 (hardware-notes/2026-10-28-arm-4-1-component-review.md): micro bus servo
@@ -50,14 +56,50 @@ class SmallArmSpecV0Tests(unittest.TestCase):
         self.assertAlmostEqual(math.degrees(self.spec.joint('gripper').upper), 100, delta=0.01)
 
     def test_speed_caps_are_half_the_datasheet_no_load_speed(self):  # D32
-        # STS3215 C018: 0.222 s/60deg at 12V; MG996R: 0.15 s/60deg at 6V; STS3032: 0.09 s/60deg at 6V (shop page)
+        # STS3215 C018: 0.222 s/60deg at 12V; STS3032: 0.09 s/60deg at 6V (shop page)
         self.assertAlmostEqual(self.spec.speed_cap_dps('shoulder_lift'), 0.5 * 60 / 0.222, delta=0.01)
-        self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_flex'), 0.5 * 60 / 0.15, delta=0.01)
+        self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_flex'), 0.5 * 60 / 0.222, delta=0.01)
         self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_roll'), 0.5 * 60 / 0.09, delta=0.01)
 
     def test_every_actuator_declares_an_acceleration_cap(self):  # D32 trapezoid motion
         for name in ('shoulder_pan', 'wrist_roll'):
             self.assertGreater(self.spec.accel_cap_dps2(name), 0, name)
+
+    def test_soft_limits_keep_clear_of_the_shell_collisions(self):
+        # cad/shell_v1 checks: upper link hits the column at -100deg; wrist hits the drum from +80deg elbow
+        lo, _ = soft_range(self.spec, 'shoulder_lift')
+        self.assertGreaterEqual(math.degrees(lo), -90 - 1e-3)
+        _, hi = soft_range(self.spec, 'elbow_flex')
+        self.assertLessEqual(math.degrees(hi), 70 + 1e-3)
+
+    def test_soft_range_defaults_to_joint_limits(self):
+        j = self.spec.joint('wrist_flex')
+        self.assertEqual(soft_range(self.spec, 'wrist_flex'), (j.lower, j.upper))
+
+    def test_tcp_radius_cap_allows_the_zero_pose_and_blocks_full_stretch(self):
+        cap = self.spec.raw['soft_limits']['tcp_max_radius_from_pan_axis_m']
+        self.assertLess(tcp_radius_m(self.spec, {}), cap)                       # ~0.352 m
+        stretched = {'shoulder_lift': math.radians(76.7), 'elbow_flex': math.radians(-74.2),
+                     'wrist_flex': math.radians(-6.3)}                           # max reach, FK reference note
+        self.assertGreater(tcp_radius_m(self.spec, stretched), cap)
+
+    def test_task_poses_pass_the_soft_limits(self):
+        deg = math.radians
+        for q in ({}, {'shoulder_pan': deg(25), 'shoulder_lift': deg(-15), 'elbow_flex': deg(35), 'wrist_flex': deg(40)},
+                  {'shoulder_lift': deg(30), 'elbow_flex': deg(-45), 'wrist_flex': deg(80)}):
+            self.assertEqual(soft_limit_problems(self.spec, q), [], q)
+
+    def test_folding_into_the_base_breaks_the_pair_rule(self):
+        # shell v1 sweep: shoulder 45 + elbow 60 drives the wrist into the drum
+        q = {'shoulder_lift': math.radians(45), 'elbow_flex': math.radians(60)}
+        problems = soft_limit_problems(self.spec, q)
+        self.assertEqual(len(problems), 1)
+        self.assertIn('shoulder_lift + elbow_flex', problems[0])
+
+    def test_tcp_radius_is_measured_from_the_pan_axis(self):
+        # base turned 90deg: the TCP swings round the pan axis, so the radius must not change
+        r0 = tcp_radius_m(self.spec, {})
+        self.assertAlmostEqual(tcp_radius_m(self.spec, {'shoulder_pan': math.radians(90)}), r0, places=6)
 
     def test_unknown_joint_name_is_a_key_error(self):
         with self.assertRaises(KeyError):
@@ -113,17 +155,17 @@ class ValidateTests(unittest.TestCase):
 
     def test_reports_joint_range_beyond_actuator_travel(self):
         def widen(d):
-            self.joint(d, 'wrist_flex').update(lower=-1.658, upper=1.658)  # URDF +-95deg on MG996R
+            self.joint(d, 'wrist_flex').update(lower=-3.5, upper=3.5)  # 401deg, wider than STS3215's 360deg
         problems = self.broken(widen)
         self.assertEqual(len(problems), 1)
         self.assertIn('wrist_flex', problems[0])
 
     def test_reports_speed_cap_that_is_not_the_agreed_fraction(self):
         def speed_up(d):
-            d['actuators']['mg996r_6v']['speed_cap_dps'] = 300.0  # below no-load, but not 50%
+            d['actuators']['sts3032_6v']['speed_cap_dps'] = 300.0  # below no-load, but not 50%
         problems = self.broken(speed_up)
         self.assertEqual(len(problems), 1)
-        self.assertIn('mg996r_6v', problems[0])
+        self.assertIn('sts3032_6v', problems[0])
 
     def test_reports_base_that_does_not_turn_a_full_circle(self):
         def narrow(d):
@@ -138,6 +180,27 @@ class ValidateTests(unittest.TestCase):
             d['base']['pan_range_deg'] = 220
         problems = self.broken(narrow_both)
         self.assertTrue(any('shoulder_pan' in p for p in problems))
+
+    def test_reports_soft_limit_outside_the_joint_limit(self):
+        def loosen(d):
+            d['soft_limits']['joints']['shoulder_lift']['lower'] = -2.0  # past the -100deg joint limit
+        problems = self.broken(loosen)
+        self.assertEqual(len(problems), 1)
+        self.assertIn('shoulder_lift', problems[0])
+
+    def test_reports_soft_limit_on_unknown_joint(self):
+        def typo(d):
+            d['soft_limits']['joints']['elbow'] = {'upper': 1.0}
+        problems = self.broken(typo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn('elbow', problems[0])
+
+    def test_reports_pair_rule_on_unknown_joint(self):
+        def typo(d):
+            d['soft_limits']['pairs'][0]['joints'][1] = 'elbow'
+        problems = self.broken(typo)
+        self.assertEqual(len(problems), 1)
+        self.assertIn('elbow', problems[0])
 
     def test_reports_missing_acceleration_cap(self):
         def drop(d):

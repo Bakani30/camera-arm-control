@@ -34,6 +34,39 @@ class Spec:
         return self.actuator(joint_name)['accel_cap_dps2']
 
 
+def soft_range(spec, joint_name):
+    """(lower, upper) in rad that the adapter clamps targets to: the joint limits tightened by soft_limits."""
+    j = spec.joint(joint_name)
+    soft = spec.raw.get('soft_limits', {}).get('joints', {}).get(joint_name, {})
+    return max(j.lower, soft.get('lower', j.lower)), min(j.upper, soft.get('upper', j.upper))
+
+
+def tcp_radius_m(spec, q):
+    """Horizontal distance (m) from the shoulder_pan axis to the TCP; compare with soft_limits."""
+    tx, ty, _ = forward_kinematics(spec, q)
+    px, py, _ = spec.joint('shoulder_pan').origin_xyz
+    return math.hypot(tx - px, ty - py)
+
+
+def soft_limit_problems(spec, q):
+    """Why the pose q (rad, missing = 0) breaks soft_limits; empty list means the adapter may send it."""
+    problems = []
+    soft = spec.raw.get('soft_limits', {})
+    for j in spec.joints:
+        lo, hi = soft_range(spec, j.name)
+        v = q.get(j.name, 0.0)
+        if not lo - 1e-9 <= v <= hi + 1e-9:
+            problems.append(f'{j.name}: {math.degrees(v):.1f} deg outside {math.degrees(lo):.1f}..{math.degrees(hi):.1f}')
+    for pair in soft.get('pairs', []):
+        total = sum(q.get(n, 0.0) for n in pair['joints'])
+        if total > pair['max_sum'] + 1e-9:
+            problems.append(f"{' + '.join(pair['joints'])}: {math.degrees(total):.1f} deg over {math.degrees(pair['max_sum']):.1f}")
+    cap = soft.get('tcp_max_radius_from_pan_axis_m')
+    if cap is not None and tcp_radius_m(spec, q) > cap:
+        problems.append(f'TCP {tcp_radius_m(spec, q):.3f} m from the pan axis, over {cap} m')
+    return problems
+
+
 def load_spec(path=DEFAULT_SPEC):
     return Spec(json.loads(Path(path).read_text(encoding='utf-8')))
 
@@ -53,6 +86,20 @@ def validate(spec):
         travel = spec.actuators[j.actuator]['travel_deg']
         if span > travel + TRAVEL_SLACK_DEG:
             problems.append(f'{j.name}: range {span:.2f} deg is wider than {j.actuator} travel {travel} deg')
+    for name, soft in spec.raw.get('soft_limits', {}).get('joints', {}).items():
+        try:
+            j = spec.joint(name)
+        except KeyError:
+            problems.append(f'{name}: soft limit names a joint the spec does not have')
+            continue
+        lo, hi = soft.get('lower', j.lower), soft.get('upper', j.upper)
+        if lo < j.lower - 1e-9 or hi > j.upper + 1e-9 or lo >= hi:
+            problems.append(f'{name}: soft limits {math.degrees(lo):.1f}..{math.degrees(hi):.1f} deg must sit inside the joint limits')
+    names = {j.name for j in spec.joints}
+    for pair in spec.raw.get('soft_limits', {}).get('pairs', []):
+        missing = [n for n in pair['joints'] if n not in names]
+        if missing:
+            problems.append(f"soft limit pair names joints the spec does not have: {', '.join(missing)}")
     pan = spec.joint('shoulder_pan')
     if abs(math.degrees(pan.upper - pan.lower) - BASE_PAN_RANGE_DEG) > 0.01:
         problems.append(f'shoulder_pan: range must be {BASE_PAN_RANGE_DEG} deg (D25)')
