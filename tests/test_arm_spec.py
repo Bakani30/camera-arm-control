@@ -26,26 +26,34 @@ class SmallArmSpecV0Tests(unittest.TestCase):
         self.assertAlmostEqual(math.degrees(pan.lower), -180, delta=0.01)
         self.assertAlmostEqual(math.degrees(pan.upper), 180, delta=0.01)
 
-    def test_mg996r_joints_stay_inside_159_degree_travel(self):  # TowerPro maker answer
-        for name in ('wrist_flex', 'wrist_roll', 'gripper'):
-            j = self.spec.joint(name)
-            self.assertEqual(j.actuator, 'mg996r_6v')
-            self.assertLessEqual(math.degrees(j.upper - j.lower), 159.0 + 1e-6, name)
+    def test_wrist_flex_mg996r_stays_inside_159_degree_travel(self):  # TowerPro maker answer
+        j = self.spec.joint('wrist_flex')
+        self.assertEqual(j.actuator, 'mg996r_6v')
+        self.assertLessEqual(math.degrees(j.upper - j.lower), 159.0 + 1e-6)
+
+    def test_wrist_roll_and_gripper_use_sts3032_with_readback(self):
+        # user choice 2026-10-28 (hardware-notes/2026-10-28-arm-4-1-component-review.md): micro bus servo
+        for name in ('wrist_roll', 'gripper'):
+            self.assertEqual(self.spec.joint(name).actuator, 'sts3032_6v', name)
+            self.assertTrue(self.spec.actuator(name)['readback'], name)
 
     def test_wrist_roll_reaches_a_quarter_turn_for_sideways_grip(self):
-        # presentation model v0: with the 159deg window centred, the jaws could not close across the arm
+        # presentation model v0: the jaws must be able to close across the arm
         roll = self.spec.joint('wrist_roll')
         self.assertGreaterEqual(math.degrees(roll.upper), 90 + 1, 'needs +90deg plus IK margin')
         self.assertLessEqual(math.degrees(roll.lower), 0)
 
-    def test_jaw_opening_stops_before_the_mg996r_ears(self):
-        # CAD v1 draft: the moving jaw wall meets the MG996R mounting ears beyond ~35deg open
-        self.assertLessEqual(math.degrees(self.spec.joint('gripper').upper), 40 + 1e-6)
+    def test_sts3032_joints_use_the_urdf_range(self):
+        # with no MG996R ears in the way, roll and jaw go back to so101_new_calib.urdf limits
+        self.assertAlmostEqual(self.spec.joint('wrist_roll').lower, -2.74385, places=5)
+        self.assertAlmostEqual(self.spec.joint('wrist_roll').upper, 2.84121, places=5)
+        self.assertAlmostEqual(math.degrees(self.spec.joint('gripper').upper), 100, delta=0.01)
 
     def test_speed_caps_are_half_the_datasheet_no_load_speed(self):  # D32
-        # STS3215 C018: 0.222 s/60deg at 12V; MG996R: 0.15 s/60deg at 6V
+        # STS3215 C018: 0.222 s/60deg at 12V; MG996R: 0.15 s/60deg at 6V; STS3032: 0.09 s/60deg at 6V (shop page)
         self.assertAlmostEqual(self.spec.speed_cap_dps('shoulder_lift'), 0.5 * 60 / 0.222, delta=0.01)
-        self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_roll'), 0.5 * 60 / 0.15, delta=0.01)
+        self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_flex'), 0.5 * 60 / 0.15, delta=0.01)
+        self.assertAlmostEqual(self.spec.speed_cap_dps('wrist_roll'), 0.5 * 60 / 0.09, delta=0.01)
 
     def test_every_actuator_declares_an_acceleration_cap(self):  # D32 trapezoid motion
         for name in ('shoulder_pan', 'wrist_roll'):
