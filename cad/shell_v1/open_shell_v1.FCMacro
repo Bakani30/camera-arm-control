@@ -1,0 +1,19 @@
+# Open shell_v1.FCStd in the FreeCAD GUI with each part in its DisplayColor, then save,
+# so later opens keep the colours. Run once after a headless build: Macro > Macros... > this file.
+import os
+
+import FreeCAD as App
+import FreeCADGui as Gui
+
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shell_v1.FCStd")
+for name, d in list(App.listDocuments().items()):
+    if os.path.abspath(d.FileName) == path:
+        App.closeDocument(name)
+doc = App.openDocument(path)
+for o in doc.Objects:
+    if hasattr(o, "DisplayColor"):
+        o.ViewObject.ShapeColor = tuple(o.DisplayColor)[:3]
+        o.ViewObject.Visibility = True   # a headless save leaves every part hidden
+doc.save()
+Gui.activeDocument().activeView().viewIsometric()
+Gui.SendMsgToActiveView("ViewFit")
