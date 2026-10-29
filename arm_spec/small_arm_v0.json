@@ -2,11 +2,11 @@
   "spec": "small_arm/0.1",
   "version_label": "v0",
   "status": "draft",
-  "decisions": ["D25", "D26", "D28", "D29", "D32"],
+  "decisions": ["D25", "D26", "D28", "D29", "D32", "D33", "D34", "D35"],
   "reference": {
     "kinematics": "SO-101 so101_new_calib.urdf, TheRobotStudio/SO-ARM100 commit a758567c39 (Apache-2.0)",
     "actuators": "docs/research/hardware-notes/2026-10-22-own-cad-bom.md and maker datasheets",
-    "note": "v0 = SO-101 URDF geometry + MG996R on wrist_flex, wrist_roll, gripper + concept base. Replaced by v1 from the team CAD (FreeCAD) and v2 from measurements of the built arm."
+    "note": "v0 = SO-101 URDF geometry + STS3215 on pan/lift/elbow/wrist_flex (wrist_flex user choice 2026-10-29, hardware-notes/2026-10-29-camera-teleop-arm-survey.md) + STS3032 on wrist_roll, gripper (user choice 2026-10-28, hardware-notes/2026-10-28-arm-4-1-component-review.md) + concept base. Replaced by v1 from the team CAD (FreeCAD) and v2 from measurements of the built arm."
   },
   "units": {"length": "m", "angle": "rad", "mass": "kg", "speed": "deg/s"},
   "speed_cap_fraction": 0.5,
@@ -24,18 +24,18 @@
       "readback": true,
       "source": "Feetech C018 datasheet A/0 2023-07-20: 0.222 s/60deg at 12V, stall 30 kg.cm, rated 10 kg.cm"
     },
-    "mg996r_6v": {
-      "model": "TowerPro MG996R",
-      "travel_deg": 159,
-      "no_load_speed_dps": 400.0,
-      "speed_cap_dps": 200.0,
-      "accel_cap_dps2": 667,
-      "accel_source": "assumed: reach the speed cap in ~0.3 s; MG996R has no acceleration setting so the host ramps it; tune in P009",
-      "stall_torque_kgcm": 11,
-      "rated_torque_kgcm": null,
-      "mass_kg": 0.055,
-      "readback": false,
-      "source": "towerpro.com.tw/product/mg996r: 0.15 s/60deg at 6V, 11 kg.cm at 6V, 55 g; maker answer: travel 0-159deg"
+    "sts3032_6v": {
+      "model": "Feetech STS3032 (C001, single shaft) 6V",
+      "travel_deg": 360,
+      "no_load_speed_dps": 666.67,
+      "speed_cap_dps": 333.33,
+      "accel_cap_dps2": 1111,
+      "accel_source": "assumed: reach the speed cap in ~0.3 s; STS acceleration register like STS3215; tune in P009",
+      "stall_torque_kgcm": 4.5,
+      "rated_torque_kgcm": 1.5,
+      "mass_kg": 0.020,
+      "readback": true,
+      "source": "shop pages, not a Feetech datasheet (eckstein-shop.de, aifitlab.com): 0.09 s/60deg at 6V, stall 4.5 / rated 1.5 kg.cm at 6V, 20 g, 23.2 x 12.1 x 28.5 mm, 4096 steps/360deg; 6V rail, not the STS3215 12V bus power"
     }
   },
   "joints": [
@@ -53,17 +53,30 @@
      "limit_source": "URDF"},
     {"name": "wrist_flex", "parent": "lower_arm_link", "child": "wrist_link",
      "origin_xyz": [-0.1349, 0.0052, 3.62355e-17], "origin_rpy": [4.02456e-15, 8.67362e-16, -1.5708],
-     "axis": [0, 0, 1], "lower": -1.387536, "upper": 1.387536, "actuator": "mg996r_6v",
-     "limit_source": "MG996R travel 159deg centred (+-79.5deg); URDF had +-95deg; confirm in CAD v1"},
+     "axis": [0, 0, 1], "lower": -1.65806, "upper": 1.65806, "actuator": "sts3215_12v",
+     "limit_source": "URDF (+-95deg) inside STS3215 360deg travel; was MG996R +-79.5deg"},
     {"name": "wrist_roll", "parent": "wrist_link", "child": "gripper_link",
      "origin_xyz": [5.55112e-17, -0.0611, 0.0181], "origin_rpy": [1.5708, 0.0486795, 3.14159],
-     "axis": [0, 0, 1], "lower": -1.117011, "upper": 1.658062, "actuator": "mg996r_6v",
-     "limit_source": "MG996R travel 159deg mounted off-centre (-64..+95deg) so the jaws reach a sideways grip (presentation model v0); URDF had -157..+163deg; confirm in CAD v1"},
+     "axis": [0, 0, 1], "lower": -2.74385, "upper": 2.84121, "actuator": "sts3032_6v",
+     "limit_source": "URDF (-157..+163deg), inside STS3032 360deg travel; was MG996R -64..+95deg; cable twist through the roll not checked"},
     {"name": "gripper", "parent": "gripper_link", "child": "moving_jaw_so101_v1_link",
      "origin_xyz": [0.0202, 0.0188, -0.0234], "origin_rpy": [1.5708, -5.24284e-08, -1.41553e-15],
-     "axis": [0, 0, 1], "lower": -0.174533, "upper": 0.698131, "actuator": "mg996r_6v",
-     "limit_source": "-10..+40deg: past ~35deg the moving jaw meets the MG996R mounting ears (CAD v1 draft); URDF had -10..+100deg"}
+     "axis": [0, 0, 1], "lower": -0.174533, "upper": 1.74533, "actuator": "sts3032_6v",
+     "limit_source": "URDF -10..+100deg: the MG996R ears that capped it at 40deg are gone with STS3032; jaw geometry is still the SO-101 one, the shell v1 parallel gripper comes in spec v1"}
   ],
+  "soft_limits": {
+    "note": "Stricter than the joint limits; the adapter clamps targets to these. From cad/shell_v1 checks and docs/research/hardware-notes/2026-10-29-h1-design-review.md.",
+    "joints": {
+      "shoulder_lift": {"lower": -1.5708, "source": "shell v1: upper link meets the column at -100deg"},
+      "elbow_flex": {"upper": 1.22173, "source": "shell v1: wrist/gripper meet the base drum from +80deg with the shoulder at 0; 70deg keeps a 10deg margin"}
+    },
+    "pairs": [
+      {"joints": ["shoulder_lift", "elbow_flex"], "max_sum": 1.5708,
+       "source": "shell v1 shoulder x elbow sweep (15deg grid, pan 0, wrist 0): every colliding pose had shoulder_lift + elbow_flex >= 100deg (forearm/gripper fold into the base drum); 90deg keeps a 10deg margin. Wrist and pan variations not swept."}
+    ],
+    "tcp_max_radius_from_pan_axis_m": 0.38,
+    "tcp_max_radius_source": "horizontal distance from the shoulder_pan axis to the TCP (arm_spec.tcp_radius_m). Far reach dropped (user 2026-10-29); the zero pose sits at ~0.35 m and top-down picks within ~0.31 m; stretched out at ~0.44 m the shoulder needs ~9.4 kg.cm of the STS3215's rated 10 (estimate, docs/research/hardware-notes/2026-10-29-h1-design-review.md)"
+  },
   "tcp": {
     "name": "gripper_frame_link", "parent": "gripper_link",
     "origin_xyz": [-0.0079, -0.000218121, -0.0981274], "origin_rpy": [0, 3.14159, 0],
