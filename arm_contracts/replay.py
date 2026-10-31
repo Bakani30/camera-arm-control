@@ -12,11 +12,14 @@ HEADER_FIELDS = ('created', 'kind', 'camera', 'notes')
 def write_replay(path, kind, messages, camera=None, notes='', created=None):
     if kind not in KINDS:
         raise ContractError(f'unknown message kind {kind!r}')
+    messages = list(messages)
     if not messages:
         raise ContractError('a replay file needs at least one message')
+    receiver = Receiver(KINDS[kind], None)            # refuse here what read_replay would refuse later
     for message in messages:
-        if message.kind != kind:
-            raise ContractError(f'expected {kind}, got {message.kind}')
+        got = receiver.receive(message, 0.0)
+        if got.problem:
+            raise ContractError(got.problem)
     header = dict(contract=f'{HEADER_KIND}/{MAJOR}.{MINOR}', created=created or datetime.now(timezone.utc).isoformat(),
                   kind=kind, camera=camera, notes=notes)
     lines = [json.dumps(header, allow_nan=False, separators=(',', ':'))] + [to_line(m) for m in messages]
@@ -32,7 +35,7 @@ def _read_header(line):
     missing = [name for name in HEADER_FIELDS if name not in header]
     if missing:
         raise ContractError(f'{HEADER_KIND}: missing {missing}')
-    if header['kind'] not in KINDS:
+    if not isinstance(header['kind'], str) or header['kind'] not in KINDS:
         raise ContractError(f"unknown message kind {header['kind']!r}")
     return header
 
@@ -46,7 +49,7 @@ def read_replay(path):
         header = _read_header(lines[0])
     except ContractError as error:
         raise ContractError(f'{path}:1: {error}') from error
-    receiver = Receiver(KINDS[header['kind']])
+    receiver = Receiver(KINDS[header['kind']], None)  # a file moves nothing; check_profile is the player's job
     messages = []
     for number, line in enumerate(lines[1:], start=2):
         got = receiver.receive(line, 0.0)  # now_ms only drives stop, which a file reader ignores

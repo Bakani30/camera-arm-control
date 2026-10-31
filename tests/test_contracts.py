@@ -5,7 +5,7 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
-from arm_contracts.messages import (ArmProfile, ContractError, EndEffectorTarget, JointCommand, Receiver, RobotState,
+from arm_contracts.messages import (AGE_LIMIT_MS, ArmProfile, ContractError, EndEffectorTarget, JointCommand, Receiver, RobotState,
                                     check_profile, parse_message, stop_reason, to_line)
 from arm_contracts.profiles import small_arm_profile
 
@@ -16,13 +16,14 @@ POSE = {name: 0.0 for name in ARM}
 
 
 def target(**kw):
-    fields = dict(t_ms=1000.0, seq=1, robot_id='small_arm', position_m=(0.18, 0.02, 0.09), grip=0.35)
+    fields = dict(t_ms=1000.0, seq=1, robot_id='small_arm', position_m=(0.18, 0.02, 0.09), grip=0.35,
+                  mode='track', enabled=True)
     return EndEffectorTarget(**{**fields, **kw})
 
 
 def command(**kw):
-    fields = dict(t_ms=1000.0, seq=1, robot_id='small_arm', profile_version='small_arm/0.1',
-                  joints_rad=POSE, grip=0.0)
+    fields = dict(t_ms=1000.0, seq=1, robot_id='small_arm', profile_version='small_arm/1.0',
+                  joints_rad=POSE, grip=0.0, enabled=True, ik_ok=True)
     return JointCommand(**{**fields, **kw})
 
 
@@ -181,7 +182,7 @@ class ProfileTests(unittest.TestCase):  # sections 3 and 5.3-5.4
 
     def test_small_arm_profile_comes_from_the_spec(self):
         self.assertEqual(self.profile.robot_id, 'small_arm')
-        self.assertEqual(self.profile.version, 'small_arm/0.1')
+        self.assertEqual(self.profile.version, 'small_arm/1.0')
         self.assertEqual(self.profile.joints, ARM)  # the gripper travels in grip, not joints_rad
 
     def test_matching_messages_pass(self):
@@ -314,6 +315,105 @@ class ReceiverTests(unittest.TestCase):  # sections 5.5-5.6
         with self.assertRaises(AttributeError):
             message.seq = 2
         self.assertEqual(replace(message, seq=2).seq, 2)
+
+
+class FailClosedTests(unittest.TestCase):  # each of these once let the arm move, or killed the receiver
+    def setUp(self):
+        self.rx = Receiver(EndEffectorTarget, small_arm_profile())
+
+    def test_old_target_is_stale(self):
+        self.assertEqual(stop_reason(target(), 1000.0 + AGE_LIMIT_MS + 1), 'stale')
+
+    def test_target_from_the_future_is_stale(self):
+        self.assertEqual(stop_reason(target(), 999.0), 'stale')
+
+    def test_a_command_cannot_grant_itself_a_longer_age(self):
+        self.assertEqual(stop_reason(command(max_age_ms=1e308), 1000.0 + AGE_LIMIT_MS + 1), 'stale')
+
+    def test_a_command_can_ask_for_a_shorter_age(self):
+        self.assertEqual(stop_reason(command(max_age_ms=50.0), 1051.0), 'stale')
+        self.assertIsNone(stop_reason(command(max_age_ms=50.0), 1049.0))
+
+    def test_a_silent_sender_means_hold(self):
+        self.assertEqual(self.rx.silence_stop(1000.0), 'silent')  # nothing received yet
+        self.rx.receive(target(), 1000.0)
+        self.assertIsNone(self.rx.silence_stop(1000.0 + AGE_LIMIT_MS))
+        self.assertEqual(self.rx.silence_stop(1000.0 + AGE_LIMIT_MS + 1), 'silent')
+
+    def test_a_changed_object_is_checked_again(self):
+        rx = Receiver(JointCommand, small_arm_profile())
+        message = command()
+        message.joints_rad['shoulder_pan'] = math.nan
+        got = rx.receive(message, 1000.0)
+        self.assertIsNone(got.message)
+        self.assertEqual(got.stop, 'invalid')
+
+    def test_the_profile_must_be_stated(self):
+        with self.assertRaises(TypeError):
+            Receiver(JointCommand)
+
+    def test_safety_fields_have_no_defaults(self):
+        for missing in ('enabled', 'ik_ok'):
+            fields = dict(t_ms=1.0, seq=1, robot_id='small_arm', profile_version='small_arm/1.0',
+                          joints_rad=POSE, grip=0.0, enabled=True, ik_ok=True)
+            del fields[missing]
+            with self.assertRaises(TypeError, msg=missing):
+                JointCommand(**fields)
+        for missing in ('enabled', 'mode'):
+            fields = dict(t_ms=1.0, seq=1, robot_id='small_arm', position_m=(0.1, 0.0, 0.1), grip=0.0,
+                          mode='track', enabled=True)
+            del fields[missing]
+            with self.assertRaises(TypeError, msg=missing):
+                EndEffectorTarget(**fields)
+
+    def test_duplicate_keys_are_rejected(self):
+        line = to_line(target()).replace('"enabled":true', '"enabled":false,"enabled":true')
+        self.assertIn('"enabled":false,"enabled":true', line)
+        with self.assertRaisesRegex(ContractError, 'enabled'):
+            parse_message(line)
+
+    def test_odd_contract_tags_are_rejected(self):
+        for tag in ('ee_target/\u0660.\u0661', 'ee_target/0.1\n', 'ee_target/0.' + '1' * 5000):
+            with self.assertRaises(ContractError, msg=repr(tag[:20])):
+                parse_message(json.dumps(as_dict(target(), contract=tag)))
+
+    def test_hostile_lines_mean_hold_instead_of_a_crash(self):
+        huge_quaternion = json.dumps(as_dict(target(), orientation_wxyz=[10 ** 200, 0, 0, 0]))
+        for line in (huge_quaternion, '[' * 200000, json.dumps(as_dict(target(), contract='x/' + '9' * 5000))):
+            got = self.rx.receive(line, 1000.0)
+            self.assertIsNone(got.message)
+            self.assertEqual(got.stop, 'invalid')
+
+    def test_a_bad_clock_means_hold_and_keeps_the_seq(self):
+        got = self.rx.receive(target(seq=5), None)
+        self.assertEqual(got.stop, 'invalid')
+        self.assertIsNotNone(self.rx.receive(target(seq=5), 1000.0).message)
+
+    def test_impossible_sizes_are_rejected(self):
+        with self.assertRaises(ContractError):
+            target(position_m=(1e300, 0.0, 0.0))
+        with self.assertRaises(ContractError):
+            command(joints_rad={**POSE, 'elbow_flex': 1e308})
+
+    def test_every_flag_and_name_is_type_checked(self):
+        for bad in (dict(enabled='false'), dict(ik_ok='false'), dict(robot_id=7), dict(profile_version=7),
+                    dict(joints_rad={**POSE, 'elbow_flex': 'x'})):
+            with self.assertRaises(ContractError, msg=bad):
+                command(**bad)
+        with self.assertRaises(ContractError):
+            state(stopped_reason=7)
+        with self.assertRaises(ContractError):
+            state(joints_measured_rad={**POSE, 'elbow_flex': math.nan}, state_source='sim')
+
+    def test_seq_zero_is_remembered(self):
+        self.rx.receive(target(seq=0), 1000.0)
+        self.assertIsNone(self.rx.receive(target(seq=0), 1000.0).message)
+
+    def test_a_restarted_sender_needs_an_explicit_reset(self):
+        self.rx.receive(target(seq=9), 1000.0)
+        self.assertIsNone(self.rx.receive(target(seq=1), 1000.0).message)
+        self.rx.reset()
+        self.assertIsNotNone(self.rx.receive(target(seq=1), 1000.0).message)
 
 
 if __name__ == '__main__':

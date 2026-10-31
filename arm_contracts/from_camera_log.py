@@ -27,13 +27,14 @@ def targets_from_frames(lines, robot_id=ROBOT_ID, center=DEFAULT_CENTER, half=BO
         screen_x, screen_y = frame['screen_target']
         depth = frame.get('depth_relative') or 0.0
         grip = GRIP_BY_CODE.get(frame.get('output'), grip)
-        tracking = frame.get('target_active') and frame.get('hand_present') and not frame.get('stale')
+        # anything but a clear yes holds: a missing or odd field must not mean track
+        tracking = frame.get('target_active') is True and frame.get('hand_present') is True and frame.get('stale') is False
         position = (center[0] + half[0] * _clamp(depth, -1.0, 1.0),
                     center[1] - half[1] * 2 * (_clamp(screen_x, 0.0, 1.0) - 0.5),
                     center[2] - half[2] * 2 * (_clamp(screen_y, 0.0, 1.0) - 0.5))
         targets.append(EndEffectorTarget(t_ms=frame['receipt_ms'], seq=frame['frame'], robot_id=robot_id,
                                          position_m=tuple(round(v, 6) for v in position), grip=grip,
-                                         mode='track' if tracking else 'hold', source='replay'))
+                                         mode='track' if tracking else 'hold', enabled=True, source='replay'))
     return targets
 
 

@@ -16,7 +16,7 @@ from arm_spec import forward_kinematics, load_spec, soft_limit_problems
 
 
 def target(seq=1, t_ms=None, **kw):
-    fields = dict(robot_id='small_arm', position_m=(0.2, 0.0, 0.1), grip=0.0)
+    fields = dict(robot_id='small_arm', position_m=(0.2, 0.0, 0.1), grip=0.0, mode='track', enabled=True)
     return EndEffectorTarget(t_ms=seq * 10.0 if t_ms is None else t_ms, seq=seq, **{**fields, **kw})
 
 
@@ -52,6 +52,19 @@ class ReplayFileTests(unittest.TestCase):  # section 7
         write_replay(self.path, 'ee_target', [target(1)], camera=camera)
         self.assertEqual(read_replay(self.path)[0]['camera'], camera)
 
+    def test_writer_refuses_what_the_reader_would_refuse(self):
+        with self.assertRaisesRegex(ContractError, 'seq'):
+            write_replay(self.path, 'ee_target', [target(2), target(2)])
+
+    def test_writer_takes_a_generator(self):
+        write_replay(self.path, 'ee_target', (target(k) for k in (1, 2)))
+        self.assertEqual(len(read_replay(self.path)[1]), 2)
+
+    def test_reader_refuses_an_unhashable_kind(self):
+        self.write_lines(self.header(kind=['ee_target']), to_line(target(1)))
+        with self.assertRaises(ContractError):
+            read_replay(self.path)
+
     def test_writer_refuses_a_mixed_or_empty_file(self):
         with self.assertRaises(ContractError):
             write_replay(self.path, 'joint_cmd', [target(1)])
@@ -81,8 +94,8 @@ class ReplayFileTests(unittest.TestCase):  # section 7
             read_replay(self.path)
 
     def test_reader_refuses_mixed_kinds_and_bad_seq(self):
-        command = JointCommand(t_ms=1.0, seq=2, robot_id='small_arm', profile_version='small_arm/0.1',
-                               joints_rad={'a': 0.0}, grip=0.0)
+        command = JointCommand(t_ms=1.0, seq=2, robot_id='small_arm', profile_version='small_arm/1.0',
+                               joints_rad={'a': 0.0}, grip=0.0, enabled=True, ik_ok=True)
         self.write_lines(self.header(), to_line(target(1)), to_line(command))
         with self.assertRaisesRegex(ContractError, ':3:'):
             read_replay(self.path)
@@ -244,6 +257,14 @@ class CameraLogTests(unittest.TestCase):  # the Friday chain: replay -> current 
     def test_lost_hand_inactive_target_and_stale_frame_all_hold(self):  # section 6
         for bad in (dict(active=False), dict(hand_present=False), dict(stale=True)):
             self.assertEqual(targets_from_frames([frame(1, **bad)])[0].mode, 'hold', bad)
+
+    def test_only_a_clear_tracking_frame_tracks(self):  # missing or odd values must hold
+        missing = json.loads(frame(1))
+        del missing['stale']
+        odd = json.loads(frame(1))
+        odd['target_active'] = 'false'
+        for line in (json.dumps(missing), json.dumps(odd)):
+            self.assertEqual(targets_from_frames([line])[0].mode, 'hold', line)
 
     def test_grip_follows_the_code_and_keeps_it_on_00(self):
         got = targets_from_frames([frame(1, output='01'), frame(2, output='10'), frame(3, output='00'),

@@ -11,12 +11,13 @@ SAMPLE_REPLAY = Path(__file__).with_name('samples') / 'demo.ee_target.jsonl'
 SAMPLE_CREATED = '2026-10-31T00:00:00+00:00'
 DEFAULT_CENTER = (0.25, 0.0, 0.12)  # in front of the base, inside the soft limits (tests check this)
 ROBOT_ID = 'small_arm'
+TRACK = dict(mode='track', enabled=True)
 
 
 def _stream(steps, dt_ms, robot_id=ROBOT_ID, grip=0.0):
     """Targets from (position, extra fields) steps. Rounding to 1 um keeps files equal across platforms."""
     return [EndEffectorTarget(t_ms=i * dt_ms, seq=i + 1, robot_id=robot_id, grip=grip, source='script',
-                              position_m=tuple(round(v, 6) for v in position), **extra)
+                              position_m=tuple(round(v, 6) for v in position), **{**TRACK, **extra})
             for i, (position, extra) in enumerate(steps)]
 
 
