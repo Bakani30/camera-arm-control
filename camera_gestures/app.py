@@ -70,7 +70,7 @@ def main():
                         depth_units='relative proxy, positive toward camera, not metres',
                         depth_formula='anchor + 1 - reference_palm_scale/current_palm_scale, clipped [-1,1]',
                         assigned_hand=args.hand, handedness_threshold=.8,
-                        classifier=args.classifier, mirrored=True, max_gap_ms=500, stale_inference_ms=500)
+                        classifier=args.classifier, mirrored=True, max_gap_ms=500, stale_inference_ms=STALE_MS)
         if keypoint is not None:
             from .keypoint import SHA256
             metadata.update(keypoint_model_sha256=SHA256, tensorflow=__import__('tensorflow').__version__)

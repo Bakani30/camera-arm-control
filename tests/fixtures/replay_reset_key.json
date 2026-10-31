@@ -1,0 +1,23 @@
+{
+  "width": 1280.0,
+  "height": 720.0,
+  "threshold": 0.7,
+  "dwell_ms": 250,
+  "drop_ms": 250,
+  "assigned_hand": "Right",
+  "classifier": "keypoint",
+  "mediapipe": "0.10.21",
+  "mirrored": true,
+  "source": "20260918T215925900313Z.frames.jsonl",
+  "frames": [
+    1069,
+    1130
+  ],
+  "resume": true,
+  "keys": [
+    [
+      1113,
+      "r"
+    ]
+  ]
+}

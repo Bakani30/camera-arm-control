@@ -11,12 +11,14 @@ from .control import HandControl
 from .pipeline import handle_key, step
 from .state import GestureOutput
 
+CENTRE = (.5, .5)
 MANUAL_PAUSE = 'MANUAL PAUSE - C TO RESUME'
 UNARMED = ('PRESS C TO START', MANUAL_PAUSE, 'HAND CHANGED - PRESS C')
 # Inputs replay needs, plus the logged outputs it is compared against.
 FIXTURE_FIELDS = ('frame', 'receipt_ms', 'stale', 'hand_present', 'handedness', 'gesture', 'score',
                   'landmarks', 'output', 'screen_target', 'screen_raw', 'target_active',
-                  'depth_relative', 'depth_active', 'control_status', 'assigned_hand')
+                  'depth_relative', 'depth_active', 'control_status', 'assigned_hand',
+                  'palm_scale_px', 'depth_raw', 'depth_reference_px')
 SETTINGS = ('width', 'height', 'threshold', 'dwell_ms', 'drop_ms', 'assigned_hand')
 
 
@@ -31,10 +33,10 @@ def infer_keys(records):
     """Recover C/Space/L/H presses from logged status; the app does not log keys.
 
     A key pressed after frame N shows up in frame N+1. Arming is C or R: R
-    rebases the target at screen centre, C at the held position, so the
-    nearer one wins. C or R pressed while already active leaves the status
-    unchanged; it is found when frame N+1's raw target is exactly a fresh
-    anchor at frame N, which ordinary tracking does not produce.
+    rebases the target at exactly screen centre, C at the held position. C or
+    R pressed while already active leaves the status unchanged; it is found
+    when frame N+1's raw target is exactly a fresh anchor at frame N, which
+    ordinary tracking does not produce.
     """
     keys = {}
     for prev, record in zip(records, records[1:]):
@@ -44,17 +46,20 @@ def infer_keys(records):
         elif after == MANUAL_PAUSE and before != MANUAL_PAUSE:
             keys[prev['frame']] = ' '
         elif before in UNARMED and after not in UNARMED:
-            raw = record['screen_raw']
-            reset = math.dist(raw, (.5, .5)) < math.dist(raw, prev['screen_target'])
+            # Held at centre the two keys act alike; call it C.
+            reset = (tuple(prev['screen_target']) != CENTRE
+                     and (tuple(record['screen_raw']) == CENTRE or _rebased(CENTRE, prev, record)))
             keys[prev['frame']] = 'r' if reset else 'c'
         elif before == after == 'ACTIVE':
-            for key, anchor in (('c', prev['screen_target']), ('r', (.5, .5))):
+            for key, anchor in (('c', prev['screen_target']), ('r', CENTRE)):
                 if _rebased(anchor, prev, record):
                     keys[prev['frame']] = key
     return keys
 
 
 def _rebased(anchor, prev, record):
+    if not (prev['hand_present'] and record['hand_present']) or prev['stale'] or record['stale']:
+        return False
     w0, w1 = prev['landmarks'][0][:2], record['landmarks'][0][:2]
     raw = tuple(a + (v-o) for a, v, o in zip(anchor, w1, w0))
     # Clipped values cannot tell a rebase from tracking.
@@ -68,7 +73,9 @@ def _resume(control, first):
     control.armed = first['control_status'] not in UNARMED
     control.status = first['control_status']
     control.target.position, control.target.raw = tuple(first['screen_target']), tuple(first['screen_raw'])
-    control.depth.value = control.depth.raw = first['depth_relative']
+    control.depth.value, control.depth.raw = first['depth_relative'], first['depth_raw']
+    control.depth.reference = first['depth_reference_px']
+    control.side = first['assigned_hand']
 
 
 def replay(records, width, height, assigned_hand='Right', threshold=.7, dwell_ms=250,
@@ -88,7 +95,8 @@ def replay(records, width, height, assigned_hand='Right', threshold=.7, dwell_ms
                             screen_target=control.target.position, screen_raw=control.target.raw,
                             target_active=control.target.active, depth_relative=control.depth.value,
                             depth_active=control.depth.active, control_status=control.status,
-                            assigned_hand=control.side))
+                            assigned_hand=control.side, palm_scale_px=scale, depth_raw=control.depth.raw,
+                            depth_reference_px=control.depth.reference))
         key = keys.get(record['frame'])
         if key is not None and handle_key(key, control, wrist, scale, now):
             state = GestureOutput(threshold, dwell_ms, drop_ms=drop_ms)
@@ -106,12 +114,15 @@ def compare(records, results, xy_tol=1e-9, depth_tol=1e-9):
     """List (frame, field, logged, replayed) where replay departs from the log."""
     mismatches = []
     for record, result in zip(records, results):
-        for field in ('output', 'target_active', 'depth_active', 'control_status'):
+        for field in ('output', 'target_active', 'depth_active', 'control_status', 'assigned_hand'):
             if record[field] != result[field]:
                 mismatches.append((record['frame'], field, record[field], result[field]))
-        for field, tol in (('screen_target', xy_tol), ('screen_raw', xy_tol), ('depth_relative', depth_tol)):
+        for field, tol in (('screen_target', xy_tol), ('screen_raw', xy_tol), ('depth_relative', depth_tol),
+                           ('depth_raw', depth_tol), ('palm_scale_px', xy_tol), ('depth_reference_px', xy_tol)):
             logged, replayed = record[field], result[field]
-            if isinstance(logged, list):
+            if logged is None or replayed is None:
+                close = logged is replayed
+            elif isinstance(logged, list):
                 close = all(math.isclose(a, b, abs_tol=tol) for a, b in zip(logged, replayed))
             else:
                 close = math.isclose(logged, replayed, abs_tol=tol)
@@ -125,6 +136,8 @@ def excerpt(path, first, last, out, resume=False):
     records, meta = load(path)
     keys = infer_keys(records)
     chosen = [{k: r[k] for k in FIXTURE_FIELDS} for r in records if first <= r['frame'] <= last]
+    if not chosen:
+        raise ValueError(f'no frames between {first} and {last}')
     for r in chosen:  # Post-MediaPipe logic reads x, y only.
         r['landmarks'] = [p[:2] for p in r['landmarks']]
     out = Path(out)
@@ -145,14 +158,17 @@ def main():
     parser.add_argument('--resume', action='store_true', help='excerpt starts mid-recording')
     args = parser.parse_args()
     if args.excerpt:
+        if args.out is None:
+            parser.error('--excerpt needs --out')
         excerpt(args.log, *args.excerpt, args.out, args.resume)
-        return
+        return 0
     records, results = replay_file(args.log)
     mismatches = compare(records, results)
     print(f'{len(records)} frames, {len(mismatches)} mismatches')
     for mismatch in mismatches[:20]:
         print(*mismatch)
+    return 1 if mismatches or not records else 0
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
