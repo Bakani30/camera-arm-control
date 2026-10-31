@@ -13,7 +13,8 @@
 ## เตรียมเครื่อง ASUS (Windows, Python 3.11, FreeCAD 1.1)
 ```powershell
 git fetch origin
-git checkout c/team-review
+git checkout main
+git pull
 py -3.11 -m venv .venv-sim
 .venv-sim\Scripts\python -m pip install -r requirements-sim.txt
 .venv-sim\Scripts\python -c "import mujoco; print(mujoco.__version__)"
