@@ -1,0 +1,2 @@
+# Physics tests of the small arm (docs/tasks/P014-physics-twin.md). Separate venv: the camera work pins another numpy.
+mujoco==3.3.0

@@ -5,6 +5,7 @@
     python run_shell_v1.py --no-render     # build only
     python run_shell_v1.py --open          # then open it in the FreeCAD GUI with colours
     python run_shell_v1.py --poses '{"ready": {"shoulder_lift": -15, "elbow_flex": 35}}'
+    python run_shell_v1.py --no-build --no-render --motion   # the arm doing the task, with table, block, tray, button
 
 Needs FreeCAD 1.1 (freecadcmd is found on PATH or in the usual install folders, or set
 FREECADCMD). Renders need uv (https://docs.astral.sh/uv/); it fetches numpy-stl and matplotlib itself.
@@ -61,6 +62,7 @@ def main():
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--open", action="store_true", help="open the result in the FreeCAD GUI (colours, visible)")
+    ap.add_argument("--motion", action="store_true", help="open the motion test scene in the FreeCAD GUI and play the task")
     a = ap.parse_args()
     poses = json.loads(a.poses) if a.poses else DEFAULT_POSES
     fc = find_freecadcmd()
@@ -76,6 +78,11 @@ def main():
             subprocess.Popen([gui, os.path.join(HERE, "open_shell_v1.FCMacro")], cwd=HERE)
         else:
             print("FreeCAD GUI not found next to", fc, "- open shell_v1.FCStd and run open_shell_v1.FCMacro")
+    if a.motion:
+        gui = find_freecad_gui(os.path.realpath(fc))
+        if not gui:
+            sys.exit("FreeCAD GUI not found next to %s" % fc)
+        subprocess.Popen([gui, os.path.join(HERE, "open_motion_scene.FCMacro")], cwd=HERE)
     if not a.no_render:
         uv = shutil.which("uv")
         if not uv:

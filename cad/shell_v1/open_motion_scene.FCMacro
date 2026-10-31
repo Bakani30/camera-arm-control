@@ -1,0 +1,155 @@
+"""Open shell v1 in the FreeCAD GUI with the table, block, tray and button, then loop the task.
+
+Run from Macro > Macros, or: python run_shell_v1.py --no-build --no-render --motion
+Shows scenario E of motion_test.py (spec v1). Nothing here touches shell_v1.FCStd or the print files.
+It loops slowly until you run player.timer.stop() in the Python console. play() restarts it, and show_move("10") plays one move.
+"""
+import math
+import os
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
+if not os.path.exists(os.path.join(HERE, "motion_test.py")):
+    import FreeCAD
+    HERE = os.path.dirname(FreeCAD.ActiveDocument.FileName) if FreeCAD.ActiveDocument else HERE
+sys.path.insert(0, HERE)
+os.environ["MOTION_SCENARIOS"] = "none"
+for _name in ("shell_v1_model", "base_v1", "links_v1", "wrist_gripper_v1", "arm_spec", "motion_moves", "motion_test"):
+    sys.modules.pop(_name, None)
+import FreeCAD as App  # noqa: E402
+import FreeCADGui as Gui  # noqa: E402
+from PySide import QtCore  # noqa: E402
+import motion_test as T  # noqa: E402
+import links_v1 as LK  # noqa: E402
+
+B, M, WG = T.B, T.M, T.WG
+DOC = "motion_scene"
+LAYOUT = T.MID_LAYOUT
+OPENINGS = (57, 48, 40, 30, 20, 10, 0)
+MOVES_WITH_OPENING = ("gripper_finger", "gripper_pad", "gripper_gear", "gripper_follower", "gripper_backcrank",
+                      "gripper_backfollower", "gripper_pins")
+FIXTURE_COLORS = {"fixture_table": (0.80, 0.82, 0.85), "fixture_tray": (0.44, 0.56, 0.66),
+                  "fixture_button": (0.76, 0.23, 0.23), "fixture_block": (0.91, 0.64, 0.23), "carried_block": (0.91, 0.64, 0.23)}
+TABLE_MM = (760, 700)                    # smaller than the collision slab in motion_test, so the arm fills the view
+FRAME_MS = 120
+SAMPLES = 17
+
+
+def add(doc, name, shape, color):
+    obj = doc.addObject("Part::Feature", name)
+    obj.Shape = shape
+    if obj.ViewObject is not None:
+        obj.ViewObject.ShapeColor = tuple(color)[:3]
+        obj.ViewObject.Visibility = True
+    return obj
+
+
+def build():
+    if DOC in App.listDocuments():
+        App.closeDocument(DOC)
+    doc = App.newDocument(DOC)
+    parts, _ = B.build_all()
+    arm = {}
+    for name, (shape, color) in parts.items():
+        if not name.startswith(MOVES_WITH_OPENING):
+            arm[name] = add(doc, name, shape, color)
+    fingers = {}
+    for opening in OPENINGS:
+        gripper, _ = WG.build_gripper(WG.phi_for_opening(opening))
+        for name, (shape, color) in gripper.items():
+            if name.startswith(MOVES_WITH_OPENING):
+                fingers[(opening, name)] = add(doc, "%s_open%d" % (name, opening), shape, color)
+    scene = T.fixtures(LAYOUT, "table")
+    scene["fixture_table"] = T.Part.makeBox(TABLE_MM[0], TABLE_MM[1], 20, App.Vector(-TABLE_MM[0] / 2 + 80, -TABLE_MM[1] / 2, -20))
+    fixed = {n: add(doc, n, s, FIXTURE_COLORS[n]) for n, s in scene.items() if n != "fixture_block"}
+    blocks = dict(table=add(doc, "block_on_table", scene["fixture_block"], FIXTURE_COLORS["fixture_block"]),
+                  tray=add(doc, "block_in_tray", T.fixtures(LAYOUT, "tray")["fixture_block"], FIXTURE_COLORS["fixture_block"]),
+                  carried=add(doc, "block_carried", T.carried_block(T.tool_point(M.pad_center_tcp, M.HOLD_MM)), FIXTURE_COLORS["carried_block"]))
+    fixed["fixture_table"].ViewObject.Transparency = 55
+    doc.recompute()
+    return doc, arm, fingers, fixed, blocks
+
+
+def placement(part, q_deg):
+    """The same pose as shell_v1_model.posed, as a placement so the GUI can move the part without copying it."""
+    result = App.Placement()
+    for joint in B.moved_by(part):
+        angle = q_deg.get(joint, 0.0)
+        if angle:
+            origin, axis = B.J[joint]
+            result = result.multiply(App.Placement(App.Vector(0, 0, 0), App.Rotation(axis, angle), origin))
+    return result
+
+
+class Player:
+    def __init__(self, arm, fingers, blocks):
+        self.arm, self.fingers, self.blocks = arm, fingers, blocks
+        # a part's shape can carry its own placement; motion goes on top of it, not instead of it
+        self.home = {o.Name: o.Placement for o in (*arm.values(), *fingers.values(), blocks["carried"])}
+        self.frames = []
+        for move in M.compensated_move_list(LAYOUT)[:11]:
+            plan = M.plan_move(B.SPEC, move, SAMPLES, M.pad_center_tcp)
+            for sample in plan.samples:
+                self.frames.append((move.name, {k: math.degrees(v) for k, v in sample.q.items()}, sample.opening_mm, move.block))
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.step)
+        self.index = 0
+        self.stop_at = 0
+        self.first = 0
+        self.loop = False
+
+    def show(self, index):
+        name, q, opening, block = self.frames[index]
+        nearest = min(OPENINGS, key=lambda o: abs(o - opening))
+        for part, obj in self.arm.items():
+            obj.Placement = placement(part, q).multiply(self.home[obj.Name])
+        for (o, part), obj in self.fingers.items():
+            obj.Placement = placement(part, q).multiply(self.home[obj.Name])
+            obj.ViewObject.Visibility = o == nearest
+        for state, obj in self.blocks.items():
+            obj.ViewObject.Visibility = state == block
+        carried = self.blocks["carried"]
+        carried.Placement = placement("gripper_palm", q).multiply(self.home[carried.Name])
+        Gui.updateGui()
+        return name
+
+    def step(self):
+        name = self.show(self.index)
+        if name != getattr(self, "shown", None):
+            App.Console.PrintMessage("move %s\n" % name)
+            self.shown = name
+        self.index += 1
+        if self.index >= self.stop_at:
+            if self.loop:
+                self.index = self.first
+            else:
+                self.timer.stop()
+
+    def play(self, start=0, stop=None, loop=True):
+        self.first, self.index, self.stop_at, self.loop = start, start, len(self.frames) if stop is None else stop, loop
+        self.timer.start(FRAME_MS)
+
+
+doc, arm_objects, finger_objects, fixed_objects, block_objects = build()
+player = Player(arm_objects, finger_objects, block_objects)
+play = player.play
+
+
+def show_move(number):
+    """Play one move by its number, such as "10" for the button press."""
+    first = next(i for i, f in enumerate(player.frames) if f[0].startswith(number))
+    player.play(first, first + SAMPLES, loop=False)
+
+
+import __main__  # noqa: E402
+
+# keep them reachable from the Python console, and keep the timer alive after this macro returns
+__main__.player, __main__.play, __main__.show_move = player, play, show_move
+player.show(0)
+if App.GuiUp:
+    view = Gui.ActiveDocument.ActiveView
+    view.viewAxonometric()
+    view.fitAll()
+    # each forearm option keeps its own file, so opening one never overwrites the other
+    doc.saveAs(os.path.join(HERE, "out", "motion", "motion_scene.FCStd" if LK.FOREARM_FRAMES else "motion_scene_tube.FCStd"))
+    play()
