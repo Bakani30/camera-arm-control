@@ -3,6 +3,7 @@
 Run: freecadcmd check_shell_v1.py (or python run_shell_v1.py --check)
 Overlap = volume of the boolean common of two parts on different links (mm3); > 1 mm3 counts.
 Single-joint sweeps from q = 0 plus a few combined poses; not a full workspace search.
+Overlap skips parts on the same link, so servo_fit() checks each forearm servo against the forearm separately.
 """
 import itertools
 import math
@@ -90,9 +91,33 @@ def soft_box_sweep(parts, step=10):
     return len(hits)
 
 
+def servo_fit(parts):
+    """Forearm servos: all 4 x 2 ribs must touch the case, and no case corner may stand clear of the forearm sideways."""
+    front, back = parts["forearm_front"][0], parts["forearm_back"][0]
+    e, w = B.EL, B.WF
+    length = math.hypot(w.x - e.x, w.z - e.z)
+    side = B.App.Vector(-(w.z - e.z) / length, 0, (w.x - e.x) / length)
+    bad = 0
+    for name in ("servo_elbow", "servo_wrist_flex"):
+        case = parts[name][0]
+        bits = [b.Volume for h in (front, back) for b in case.common(h).Solids]
+        weak = len(bits) < 8 or min(bits) < 0.5
+        centre = case.BoundBox.Center
+        bare = 0
+        for v in case.Vertexes:
+            sign = 1 if (v.Point - centre).dot(side) > 0 else -1
+            ray = B.Part.makeLine(v.Point + side * (0.05 * sign), v.Point + side * (40 * sign))
+            bare += ray.common(front).Length + ray.common(back).Length < 0.01
+        print("%s: %d rib contacts, smallest %.2f mm3, total %.1f mm3; corners uncovered sideways %d/%d" % (
+            name, len(bits), min(bits or [0]), sum(bits), bare, len(case.Vertexes)))
+        bad += weak or bare > 0
+    return bad
+
+
 def main():
     parts, _ = B.build_all()
     fails = fk_check()
+    fit_bad = servo_fit(parts)
     grip_bad = gripper_sweep()
     lim = {j.name: (math.degrees(j.lower), math.degrees(j.upper)) for j in B.SPEC.joints}
     report = {}
@@ -116,7 +141,8 @@ def main():
               {"shoulder_lift": 30, "elbow_flex": -60, "wrist_flex": 40, "wrist_roll": 70}):
         print("combined %s: %s" % (q, overlaps(parts, q) or "clear"))
     soft_bad = soft_box_sweep(parts)
-    print("FK mismatches:", fails, "| gripper poses with overlaps:", grip_bad, "| allowed poses with overlaps:", soft_bad)
+    print("FK mismatches:", fails, "| gripper poses with overlaps:", grip_bad, "| allowed poses with overlaps:", soft_bad,
+          "| forearm servos with a bad fit:", fit_bad)
 
 
 main()

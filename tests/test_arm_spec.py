@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from arm_spec import (DEFAULT_SPEC, forward_kinematics, load_spec, soft_limit_problems, soft_range,
-                      tcp_radius_m, validate)
+from arm_spec import (DEFAULT_SPEC, V0_SPEC, crank_rad, fingertip_mm, forward_kinematics, load_spec, soft_limit_problems,
+                      soft_range, tcp_radius_m, tcp_xyz_for_opening, validate)
 
 # Expected values come from sources outside arm_spec: SO-101 URDF (so101_new_calib.urdf,
 # SO-ARM100 commit a758567c39), D25/D32 in docs/research/03-DECISIONS-GLOSSARY.md and the
@@ -14,7 +14,7 @@ from arm_spec import (DEFAULT_SPEC, forward_kinematics, load_spec, soft_limit_pr
 
 class SmallArmSpecV0Tests(unittest.TestCase):
     def setUp(self):
-        self.spec = load_spec()
+        self.spec = load_spec(V0_SPEC)
 
     def test_joint_chain_matches_so101_urdf_order(self):
         self.assertEqual(
@@ -110,7 +110,7 @@ class ForwardKinematicsTests(unittest.TestCase):
     # Worked examples from an independent numpy FK over so101_new_calib.urdf, recorded with its
     # inputs in docs/research/hardware-notes/2026-10-23-so101-fk-reference.md
     def setUp(self):
-        self.spec = load_spec()
+        self.spec = load_spec(V0_SPEC)
 
     def assertPosition(self, actual, expected):
         for a, e in zip(actual, expected):
@@ -208,6 +208,150 @@ class ValidateTests(unittest.TestCase):
         problems = self.broken(drop)
         self.assertEqual(len(problems), 1)
         self.assertIn('sts3215_12v', problems[0])
+
+
+class SmallArmSpecV1Tests(unittest.TestCase):
+    # Expected values come from cad/shell_v1 (wrist_gripper_v1 at each opening, part volumes) and
+    # docs/research/hardware-notes/2026-10-31-motion-test-results.md.
+    def setUp(self):
+        self.spec = load_spec()
+
+    def test_default_is_v1_and_consistent(self):
+        self.assertEqual(self.spec.raw['spec'], 'small_arm/1.0')
+        self.assertEqual(validate(self.spec), [])
+
+    def test_arm_joint_frames_did_not_change(self):
+        v0 = load_spec(V0_SPEC)
+        for name in ('shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll'):
+            a, b = self.spec.joint(name), v0.joint(name)
+            self.assertEqual((a.origin_xyz, a.origin_rpy, a.axis, a.lower, a.upper), (b.origin_xyz, b.origin_rpy, b.axis, b.lower, b.upper), name)
+
+    def test_tcp_is_the_pad_center_on_the_roll_axis(self):
+        self.assertEqual(self.spec.tcp['origin_xyz'][:2], [0.0, 0.0])
+        x, y, z = forward_kinematics(self.spec, {})
+        self.assertAlmostEqual(x, 0.29323 + 0.084, places=4)
+        self.assertAlmostEqual(y, -0.00018, places=4)
+        self.assertAlmostEqual(z, 0.23437, places=4)
+
+    def test_spec_tcp_is_the_table_value_at_the_holding_width(self):
+        self.assertAlmostEqual(tcp_xyz_for_opening(self.spec, 40)[2], self.spec.tcp['origin_xyz'][2], places=6)
+
+    def test_fingertip_follows_the_four_bar(self):
+        self.assertAlmostEqual(fingertip_mm(self.spec, 57), 86.7)
+        self.assertAlmostEqual(fingertip_mm(self.spec, 40), 97.0)
+        self.assertAlmostEqual(fingertip_mm(self.spec, 0), 106.3)
+        self.assertAlmostEqual(fingertip_mm(self.spec, 45), (97.0 + 91.8) / 2)
+
+    def test_pad_center_moves_with_the_opening(self):
+        self.assertEqual(tcp_xyz_for_opening(self.spec, 57)[:2], (0.0, 0.0))
+        self.assertAlmostEqual(tcp_xyz_for_opening(self.spec, 57)[2], -0.0737, places=6)
+        self.assertAlmostEqual(tcp_xyz_for_opening(self.spec, 0)[2], -0.0933, places=6)
+
+    def test_crank_angle_follows_the_opening(self):
+        self.assertAlmostEqual(math.degrees(crank_rad(self.spec, 0)), 8.92, places=2)
+        self.assertAlmostEqual(math.degrees(crank_rad(self.spec, 40)), 40.92, places=2)
+        self.assertAlmostEqual(math.degrees(crank_rad(self.spec, 57)), 60.17, places=2)
+
+    def test_opening_outside_the_gripper_range_is_an_error(self):
+        for bad in (-1, 58):
+            with self.assertRaises(ValueError):
+                fingertip_mm(self.spec, bad)
+            with self.assertRaises(ValueError):
+                crank_rad(self.spec, bad)
+
+    def test_gripper_joint_is_the_shell_crank(self):
+        j = self.spec.joint('gripper')
+        self.assertAlmostEqual(math.degrees(j.lower), 8.92, places=2)
+        self.assertAlmostEqual(math.degrees(j.upper), 60.17, places=2)
+        self.assertEqual(j.child, 'finger_crank_link')
+        got = forward_kinematics(self.spec, {}, 'finger_crank_link')
+        for a, b in zip(got, (0.30303, -0.00018, 0.24137)):
+            self.assertAlmostEqual(a, b, places=4)
+
+    def test_masses_come_from_the_shell(self):
+        masses = self.spec.raw['link_mass_kg']
+        self.assertNotIn('moving_jaw_so101_v1_link', masses)
+        self.assertAlmostEqual(sum(masses.values()), 0.8933, delta=0.001)
+        self.assertAlmostEqual(masses['gripper_link'], 0.0705, delta=0.001)
+
+    def test_top_down_near_the_pan_axis_breaks_the_soft_limits(self):
+        # motion test: open fingers hit the column at r <= 110 mm with the tool straight down
+        q = {'shoulder_lift': math.radians(-40), 'elbow_flex': math.radians(40), 'wrist_flex': math.radians(90)}
+        self.assertLess(tcp_radius_m(self.spec, q), 0.125)
+        self.assertTrue(any('pan axis' in p for p in soft_limit_problems(self.spec, q)))
+
+    def test_task_poses_pass_the_soft_limits(self):
+        deg = math.radians
+        for q in ({}, {'shoulder_pan': deg(25), 'shoulder_lift': deg(-15), 'elbow_flex': deg(35), 'wrist_flex': deg(40)},
+                  {'shoulder_lift': deg(30), 'elbow_flex': deg(-45), 'wrist_flex': deg(80)}):
+            self.assertEqual(soft_limit_problems(self.spec, q), [], q)
+
+    def assertBroken(self, word, opening=None, **deg):
+        q = {k: math.radians(v) for k, v in deg.items()}
+        problems = soft_limit_problems(self.spec, q, opening)
+        self.assertTrue(any(word in p for p in problems), (deg, problems))
+
+    def test_tool_below_the_table_breaks_the_soft_limits(self):  # poses that overlap the table in the sweep
+        self.assertBroken('table', 57, shoulder_lift=45, elbow_flex=30, wrist_flex=-30)
+        self.assertBroken('table', 57, shoulder_lift=0, elbow_flex=45, wrist_flex=45)
+
+    def test_forearm_on_the_table_counts_while_the_tcp_is_above_it(self):
+        q = {'shoulder_lift': math.radians(60), 'elbow_flex': math.radians(15), 'wrist_flex': math.radians(-90)}
+        self.assertGreater(forward_kinematics(self.spec, q)[2], 0.03)
+        self.assertBroken('table', 57, shoulder_lift=60, elbow_flex=15, wrist_flex=-90)
+
+    def test_finger_roots_count_when_the_tool_tilts_up(self):  # the tip is the high end of the finger here
+        self.assertBroken('finger roots', 57, shoulder_lift=60, elbow_flex=0, wrist_flex=-75)
+
+    def test_tool_over_a_base_leg_breaks_the_soft_limits(self):
+        self.assertBroken('leg', 57, shoulder_pan=36, shoulder_lift=-15, elbow_flex=60, wrist_flex=15)
+
+    def test_folded_near_the_column_breaks_the_soft_limits(self):
+        self.assertBroken('pan axis', 57, shoulder_lift=-75, elbow_flex=60, wrist_flex=75)
+
+    def test_top_down_grasp_at_table_height_is_allowed(self):
+        # pad centre 20 mm over the table at 20 cm, from the motion test scenario E
+        for opening, q in ((57, {'shoulder_lift': 0.2177, 'elbow_flex': 0.3289, 'wrist_flex': 1.0243}),):
+            self.assertEqual(soft_limit_problems(self.spec, q, opening), [])
+
+    def test_unknown_opening_checks_the_worse_end(self):
+        # fingers reach furthest when closed, so a pose that only clears the table open must fail without an opening
+        q = {'shoulder_lift': 0.2177, 'elbow_flex': 0.3289, 'wrist_flex': 1.0243}
+        self.assertEqual(soft_limit_problems(self.spec, q, 57), [])
+        self.assertTrue(any('table' in p for p in soft_limit_problems(self.spec, q)))
+
+    def changed(self, edit):
+        data = json.loads(Path(DEFAULT_SPEC).read_text(encoding='utf-8'))
+        edit(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'spec.json'
+            path.write_text(json.dumps(data), encoding='utf-8')
+            return validate(load_spec(path))
+
+    def test_validate_rejects_a_floor_frame_the_spec_does_not_have(self):
+        def edit(d):
+            d['soft_limits']['floor']['frames'][0]['frame'] = 'no_such_link'
+        self.assertTrue(any('floor' in p for p in self.changed(edit)))
+
+    def test_validate_rejects_a_min_radius_over_the_max(self):
+        def edit(d):
+            d['soft_limits']['tcp_min_radius_from_pan_axis_m'] = 0.5
+        self.assertTrue(any('radius' in p for p in self.changed(edit)))
+
+    def test_validate_rejects_a_tcp_off_the_table(self):
+        def edit(d):
+            d['tcp']['origin_xyz'][2] = -0.098
+        self.assertTrue(any('tcp' in p for p in self.changed(edit)))
+
+    def test_validate_rejects_an_unsorted_gripper_table(self):
+        def edit(d):
+            d['gripper_kinematics']['by_opening'].reverse()
+        self.assertTrue(any('by_opening' in p for p in self.changed(edit)))
+
+    def test_validate_rejects_a_crank_outside_the_joint(self):
+        def edit(d):
+            d['gripper_kinematics']['by_opening'][-1]['crank_deg'] = 90.0
+        self.assertTrue(any('crank' in p for p in self.changed(edit)))
 
 
 if __name__ == '__main__':

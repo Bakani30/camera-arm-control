@@ -11,6 +11,7 @@ What changes from the concept parts in shell_v1_model:
 STS3215 horn screw pattern (4 holes on r 7, M3) is an estimate: MEASURE the horns before printing.
 """
 import math
+import os
 
 import Part
 from FreeCAD import Vector as V
@@ -18,7 +19,7 @@ from FreeCAD import Vector as V
 import shell_v1_model as S
 
 H = dict(r=7.0, n=4, free=3.4, pilot=2.5, access=6.0,   # STS3215 horn screws (MEASURE), M3 self-tapping
-         tube_r=18.5, split_gap=0.0, channel_r=9.0, screw_cb=6.0)
+         tube_r=18.5, split_gap=0.0, channel_r=9.0, screw_cb=6.0, exit_len=6.0)
 SH, EL, WF, PAN = S.SH, S.EL, S.WF, S.PAN
 
 # Two-point support for every STS3215 joint (H1): a 6806 bearing (30 x 42 x 7, MEASURE price/fit)
@@ -64,17 +65,18 @@ def toward(a, b, r):
     return (a[0] + dx / n * r, a[1] + dz / n * r)
 
 
-def crush_ribs(kind, shaft, face_y, along, y_min):
+def crush_ribs(kind, shaft, face_y, along, y_min, far_x=None):
     """Four ribs on the long walls of a servo pocket, 0.15 mm into the case: a press fit that prints.
 
     y_min: the part's back face; ribs stop 0.5 mm inside it where the servo sticks out of the part.
+    far_x: where along the case the far pair sits (default a quarter of its length), to clear a window.
     """
     d = S.SERVOS[kind]
     centre, ang = servo_frame(kind, shaft, along)
     ribs = None
     zc = d["W"] / 2 + S.P["clearance"] + BR["rib_r"] - BR["rib_in"]
     y0 = max(face_y - d["H"] + 1, y_min + 0.5)
-    for x in (-d["L"] / 4, d["L"] / 4):
+    for x in (-d["L"] / 4, d["L"] / 4 if far_x is None else far_x):
         for z in (-zc, zc):
             r = Part.makeCylinder(BR["rib_r"], face_y - 1 - y0, V(x, y0, z), V(0, 1, 0))
             ribs = r if ribs is None else ribs.fuse(r)
@@ -188,6 +190,38 @@ def build_upper():
 
 
 # ---------------------------------------------------------------- forearm tube (child of elbow_flex)
+# STS3215's 35 x 24.7 section does not fit the round tube: its corners reach 3.7 mm past the surface.
+# So the forearm has a frame round each servo, with side windows on purpose (option C, D38).
+# SHELL_FOREARM=tube builds the plain tube the servos break through, only to compare.
+FOREARM_FRAMES = os.environ.get("SHELL_FOREARM") != "tube"
+# Distances along the case are from its centre; rib_x stays past the window so the far ribs keep their full length.
+# Screws tie the two halves just past each frame; vents move onto the hub, away from the section the window thins.
+FRAME = dict(wall=3.0, window_from=5.5, window_to=19.5, window_margin=8.0, window_r=3.0, rib_x=21.0,
+             screw_t=41.0, screw_n=13.0, vent_t=3.0, vent_half=6.0)
+
+
+def servo_box(shaft, along, y_front):
+    """The frame round a servo case in the forearm, from its top face to just past its bottom."""
+    d, g, w = S.STS, S.P["clearance"], FRAME["wall"]
+    centre, ang = servo_frame("sts", shaft, along)
+    box = Part.makeBox(d["L"] + 2 * (g + w), d["H"] + g + w, d["W"] + 2 * (g + w),
+                       V(-d["L"] / 2 - g - w, y_front - d["H"] - g - w, -d["W"] / 2 - g - w))
+    return local(box, centre, ang)
+
+
+def servo_window(shaft, along, y_front):
+    """A rounded slot through both sides of the frame, past the hub so the hub keeps its screws."""
+    d, g = S.STS, S.P["clearance"]
+    half = max(d["W"] / 2 + g + FRAME["wall"], H["tube_r"]) + 1   # past the tube, or a strip of its wall stays across
+    x0, x1 = FRAME["window_from"], FRAME["window_to"]
+    y0, y1 = y_front - d["H"] + FRAME["window_margin"], y_front - FRAME["window_margin"]
+    slot = Part.makeBox(x1 - x0, y1 - y0, 2 * half, V(x0, y0, -half))
+    edges = [e for e in slot.Edges if abs(e.Vertexes[0].Z - e.Vertexes[-1].Z) > half]
+    slot = slot.makeFillet(FRAME["window_r"], edges)
+    centre, ang = servo_frame("sts", shaft, along)
+    return local(slot, centre, ang)
+
+
 def build_forearm():
     y_front = S.BACK[1]                                            # horn faces of both servos
     r = H["tube_r"]
@@ -202,6 +236,9 @@ def build_forearm():
     tube = S.soften(tube.removeSplitter(), 2.0)
     tube = tube.fuse(flange(e, y_front)).fuse(flange(w, y_front)).removeSplitter()
 
+    if FOREARM_FRAMES:
+        tube = tube.fuse(servo_box(e, u, y_front)).fuse(servo_box(w, (-u[0], -u[1]), y_front)).removeSplitter()
+
     e_case, e_horn, e_pocket = S.servo_y("sts", e, y_front, +1, u)
     w_case, w_horn, w_pocket = S.servo_y("sts", w, y_front, +1, (-u[0], -u[1]))
     tube = tube.cut(e_pocket).cut(w_pocket)
@@ -211,14 +248,18 @@ def build_forearm():
         tube = tube.fuse(collar(w, y_front, wrist_gripper_v1.wrist_horn_face()))
     tube = tube.removeSplitter().cut(e_pocket).cut(w_pocket)          # collars keep off the servos
     # ribs last: they reach into the pocket
-    tube = tube.fuse(crush_ribs("sts", e, y_front, u, yc - r)).fuse(crush_ribs("sts", w, y_front, (-u[0], -u[1]), yc - r))
+    far_x = FRAME["rib_x"] if FOREARM_FRAMES else None
+    tube = tube.fuse(crush_ribs("sts", e, y_front, u, yc - r, far_x)).fuse(crush_ribs("sts", w, y_front, (-u[0], -u[1]), yc - r, far_x))
+    if FOREARM_FRAMES:
+        tube = tube.cut(servo_window(e, u, y_front)).cut(servo_window(w, (-u[0], -u[1]), y_front))
     tube = tube.cut(pin_hole(toward(e, upper_mid(), BR["pin_r"]), y_front - BR["flange_t"] - 6, y_front + 1))
     tube = tube.cut(pin_hole(toward(w, (w[0] + u[0], w[1] + u[1]), BR["pin_r"]), y_front - BR["flange_t"] - 6, y_front + 1))
     t0, t1 = 30.0, L - 30.0                                        # channel overlaps both pockets
     p0 = V(e[0] + u[0] * t0, yc, e[1] + u[1] * t0)
     tube = tube.cut(Part.makeCylinder(H["channel_r"], t1 - t0, p0, V(u[0], 0, u[1])))
-    for t in (45.0, L - 45.0):                                     # cable exits on the back
-        tube = tube.cut(S.cyl_y(e[0] + u[0] * t, e[1] + u[1] * t, 4.0, yc - r - 1, yc))
+    for t in (45.0, L - 45.0):                                     # cable exits on the back: slots a plug can pass, MEASURE
+        ends = [(e[0] + u[0] * (t + d), e[1] + u[1] * (t + d)) for d in (-H["exit_len"] / 2, H["exit_len"] / 2)]
+        tube = tube.cut(S.band_xz(ends, 4.0, yc - r - 1, yc))
 
     # split along the tube; M3 screws from the back half into the front half
     front = tube.common(S.box(-500, 500, yc, 500, -500, 500))
@@ -228,17 +269,22 @@ def build_forearm():
         screw_pts.append((e[0] + u[0] * t + n[0] * 13 * s, e[1] + u[1] * t + n[1] * 13 * s))
     for s in (1, -1):
         screw_pts.append((w[0] + n[0] * 15.5 * s, w[1] + n[1] * 15.5 * s))
+        if FOREARM_FRAMES:
+            for t in (FRAME["screw_t"], L - FRAME["screw_t"]):
+                screw_pts.append((e[0] + u[0] * t + n[0] * FRAME["screw_n"] * s, e[1] + u[1] * t + n[1] * FRAME["screw_n"] * s))
+    outside = back.BoundBox.YMin - 1                                # the frames stand proud of the tube's back
     for x, z in screw_pts:
         front = front.cut(S.cyl_y(x, z, H["pilot"] / 2, yc - 0.1, yc + 14))
-        back = back.cut(S.cyl_y(x, z, H["free"] / 2, yc - r - 1, yc + 0.1))
-        back = back.cut(S.cyl_y(x, z, H["screw_cb"] / 2, yc - r - 1, yc - r + 3))
+        back = back.cut(S.cyl_y(x, z, H["free"] / 2, outside, yc + 0.1))
+        back = back.cut(S.cyl_y(x, z, H["screw_cb"] / 2, outside, yc - r + 3))
     # vents in the back half over each servo (review item 7): the tube is closed and STS3215s run warm
-    for centre in ((e[0] + u[0] * 11, e[1] + u[1] * 11), (w[0] - u[0] * 11, w[1] - u[1] * 11)):
+    vent_t, vent_half = (FRAME["vent_t"], FRAME["vent_half"]) if FOREARM_FRAMES else (11.0, 8.0)
+    for centre in ((e[0] + u[0] * vent_t, e[1] + u[1] * vent_t), (w[0] - u[0] * vent_t, w[1] - u[1] * vent_t)):
         for k in (-6.0, 0.0, 6.0):
             cxz = (centre[0] + n[0] * k, centre[1] + n[1] * k)
-            a0 = (cxz[0] - u[0] * 8, cxz[1] - u[1] * 8)
-            a1 = (cxz[0] + u[0] * 8, cxz[1] + u[1] * 8)
-            back = back.cut(S.band_xz([a0, a1], 1.1, yc - r - 1, yc - r + 5))
+            a0 = (cxz[0] - u[0] * vent_half, cxz[1] - u[1] * vent_half)
+            a1 = (cxz[0] + u[0] * vent_half, cxz[1] + u[1] * vent_half)
+            back = back.cut(S.band_xz([a0, a1], 1.1, outside, yc - r + 5))
     return {"forearm_front": (front, S.GREY), "forearm_back": (back, S.GREY),
             "servo_elbow": (e_case, S.BLACK), "horn_elbow": (e_horn, S.STEEL),
             "servo_wrist_flex": (w_case, S.BLACK), "horn_wrist_flex": (w_horn, S.STEEL)}

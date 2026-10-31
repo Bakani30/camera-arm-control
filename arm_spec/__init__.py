@@ -4,7 +4,8 @@ import math
 from pathlib import Path
 from types import SimpleNamespace
 
-DEFAULT_SPEC = Path(__file__).with_name('small_arm_v0.json')
+DEFAULT_SPEC = Path(__file__).with_name('small_arm_v1.json')
+V0_SPEC = Path(__file__).with_name('small_arm_v0.json')  # the SO-101 reference, kept for its FK tests
 BASE_PAN_RANGE_DEG = 360  # D25: the base turns a full circle
 TRAVEL_SLACK_DEG = 1e-6  # float slack when comparing a joint range with actuator travel
 SPEED_CAP_SLACK_DPS = 0.01  # speed caps must equal speed_cap_fraction x no-load speed
@@ -48,13 +49,18 @@ def tcp_radius_m(spec, q):
     return math.hypot(tx - px, ty - py)
 
 
-def soft_limit_problems(spec, q):
-    """Why the pose q (rad, missing = 0) breaks soft_limits; empty list means the adapter may send it."""
+def soft_limit_problems(spec, q, opening_mm=None):
+    """Why the pose q (rad, missing = 0) breaks soft_limits; empty list means the adapter may send it.
+
+    opening_mm is the finger opening; without it the floor check takes the worse of fully open and closed.
+    """
     problems = []
     soft = spec.raw.get('soft_limits', {})
     for j in spec.joints:
+        if j.name not in q:
+            continue                    # no command for it; FK reads a missing joint as 0, inside every arm range
         lo, hi = soft_range(spec, j.name)
-        v = q.get(j.name, 0.0)
+        v = q[j.name]
         if not lo - 1e-9 <= v <= hi + 1e-9:
             problems.append(f'{j.name}: {math.degrees(v):.1f} deg outside {math.degrees(lo):.1f}..{math.degrees(hi):.1f}')
     for pair in soft.get('pairs', []):
@@ -64,7 +70,88 @@ def soft_limit_problems(spec, q):
     cap = soft.get('tcp_max_radius_from_pan_axis_m')
     if cap is not None and tcp_radius_m(spec, q) > cap:
         problems.append(f'TCP {tcp_radius_m(spec, q):.3f} m from the pan axis, over {cap} m')
+    least = soft.get('tcp_min_radius_from_pan_axis_m')
+    if least is not None and tcp_radius_m(spec, q) < least:
+        problems.append(f'TCP {tcp_radius_m(spec, q):.3f} m from the pan axis, under {least} m')
+    if 'floor' in soft:
+        problems += _floor_problems(spec, q, opening_mm)
     return problems
+
+
+def _point(spec, q, xyz):
+    """A point given in gripper_link, in the base frame."""
+    return forward_kinematics(SimpleNamespace(joints=spec.joints, tcp={**spec.tcp, 'origin_xyz': list(xyz)}), q)
+
+
+def _distance_to_leg(x, y, angle_deg, leg):
+    """Horizontal distance from (x, y), taken from the pan axis, to a leg's centre line."""
+    c, s = math.cos(math.radians(angle_deg)), math.sin(math.radians(angle_deg))
+    along = max(leg['root_radius_m'], min(leg['tip_radius_m'], x * c + y * s))
+    return math.hypot(x - along * c, y - along * s)
+
+
+def _floor_problems(spec, q, opening_mm):
+    floor = spec.raw['soft_limits']['floor']
+    table = spec.raw.get('gripper_kinematics')
+    ends = (table['by_opening'][0]['opening_mm'], table['max_opening_mm'])
+    px, py, _ = spec.joint('shoulder_pan').origin_xyz
+    leg, drum = floor['legs'], floor['drum']
+    problems = set()
+
+    def check(name, xyz, radius, lowest):
+        """radius is how far the part reaches sideways; lowest is the z of its bottom."""
+        x, y = xyz[0] - px, xyz[1] - py
+        if lowest < floor['table_z_m'] + floor['clearance_m']:
+            problems.add(f'{name} {lowest * 1000:.0f} mm from the table')
+        if lowest < leg['top_z_m'] + floor['clearance_m'] and any(
+                _distance_to_leg(x, y, a, leg) <= leg['half_width_m'] + radius for a in leg['angles_deg']):
+            problems.add(f'{name} {lowest * 1000:.0f} mm over a base leg')
+        if lowest < drum['top_z_m'] + floor['clearance_m'] and math.hypot(x, y) <= drum['radius_m'] + radius:
+            problems.add(f'{name} {lowest * 1000:.0f} mm over the base drum')
+
+    for item in floor['frames']:
+        c = forward_kinematics(spec, q, item['frame'])
+        check(item['frame'], c, item['radius_m'], c[2] - item['radius_m'])
+    origin = _point(spec, q, (0.0, 0.0, 0.0))
+    ahead = _point(spec, q, (0.0, 0.0, -0.1))
+    tool = [(a - b) / 0.1 for a, b in zip(ahead, origin)]
+    sideways = math.sqrt(max(0.0, 1 - tool[2] ** 2))
+    disc = floor['palm_disc']
+    c = _point(spec, q, (0.0, 0.0, -disc['along_m']))
+    check('palm', c, disc['radius_m'], c[2] - disc['radius_m'] * sideways)
+    for opening in ends if opening_mm is None else (opening_mm,):
+        along = fingertip_mm(spec, opening) / 1000
+        reach = opening / 2000 + floor['finger_outer_past_half_opening_m']
+        for name, at in (('fingers', along), ('finger roots', along - floor['finger_length_m'])):
+            c = _point(spec, q, (0.0, 0.0, -at))
+            check(name, c, reach, c[2] - reach * sideways)
+    return sorted(problems)
+
+
+def _gripper_value(spec, opening_mm, key):
+    rows = spec.raw['gripper_kinematics']['by_opening']
+    if not rows[0]['opening_mm'] <= opening_mm <= rows[-1]['opening_mm']:
+        raise ValueError(f"opening {opening_mm} mm is outside {rows[0]['opening_mm']}..{rows[-1]['opening_mm']} mm")
+    for a, b in zip(rows, rows[1:]):
+        if opening_mm <= b['opening_mm']:
+            f = (opening_mm - a['opening_mm']) / (b['opening_mm'] - a['opening_mm'])
+            return a[key] + (b[key] - a[key]) * f
+
+
+def fingertip_mm(spec, opening_mm):
+    """Fingertip distance along the tool from the wrist_roll joint: the four-bar moves it as the fingers open."""
+    return _gripper_value(spec, opening_mm, 'fingertip_mm')
+
+
+def crank_rad(spec, opening_mm):
+    """Gripper servo angle for a finger opening."""
+    return math.radians(_gripper_value(spec, opening_mm, 'crank_deg'))
+
+
+def tcp_xyz_for_opening(spec, opening_mm):
+    """The pad centre in gripper_link (m) at this opening; spec.tcp holds the value at the holding width."""
+    behind = spec.raw['gripper_kinematics']['pad_center_behind_tip_mm']
+    return (0.0, 0.0, -(fingertip_mm(spec, opening_mm) - behind) / 1000)
 
 
 def load_spec(path=DEFAULT_SPEC):
@@ -100,9 +187,35 @@ def validate(spec):
         missing = [n for n in pair['joints'] if n not in names]
         if missing:
             problems.append(f"soft limit pair names joints the spec does not have: {', '.join(missing)}")
+    soft = spec.raw.get('soft_limits', {})
+    if soft.get('tcp_min_radius_from_pan_axis_m', 0) >= soft.get('tcp_max_radius_from_pan_axis_m', math.inf):
+        problems.append('soft limit TCP radius: the minimum must be under the maximum')
+    problems += _gripper_problems(spec)
+    for item in soft.get('floor', {}).get('frames', []):
+        if not any(j.child == item['frame'] for j in spec.joints):
+            problems.append(f"soft limit floor names a frame the spec does not have: {item['frame']}")
     pan = spec.joint('shoulder_pan')
     if abs(math.degrees(pan.upper - pan.lower) - BASE_PAN_RANGE_DEG) > 0.01:
         problems.append(f'shoulder_pan: range must be {BASE_PAN_RANGE_DEG} deg (D25)')
+    return problems
+
+
+def _gripper_problems(spec):
+    table = spec.raw.get('gripper_kinematics')
+    if table is None:
+        return []
+    problems = []
+    rows = table['by_opening']
+    openings = [r['opening_mm'] for r in rows]
+    if openings != sorted(openings):
+        return ['gripper_kinematics.by_opening must be sorted by opening_mm']
+    j = spec.joint('gripper')
+    for r in rows:
+        if not j.lower - 1e-4 <= math.radians(r['crank_deg']) <= j.upper + 1e-4:
+            problems.append(f"gripper crank {r['crank_deg']} deg at {r['opening_mm']} mm is outside the joint limits")
+    held = tcp_xyz_for_opening(spec, table['holding_opening_mm'])
+    if math.dist(held, spec.tcp['origin_xyz']) > 1e-4:
+        problems.append(f"tcp origin {spec.tcp['origin_xyz']} is not the table value {held} at the holding width")
     return problems
 
 

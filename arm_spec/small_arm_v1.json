@@ -1,0 +1,357 @@
+{
+  "spec": "small_arm/1.0",
+  "version_label": "v1",
+  "status": "draft",
+  "decisions": [
+    "D25",
+    "D26",
+    "D28",
+    "D29",
+    "D32",
+    "D33",
+    "D34",
+    "D35",
+    "D37"
+  ],
+  "reference": {
+    "kinematics": "SO-101 so101_new_calib.urdf, TheRobotStudio/SO-ARM100 commit a758567c39 (Apache-2.0)",
+    "actuators": "docs/research/hardware-notes/2026-10-22-own-cad-bom.md and maker datasheets",
+    "note": "v0 = SO-101 URDF geometry + STS3215 on pan/lift/elbow/wrist_flex (wrist_flex user choice 2026-10-29, hardware-notes/2026-10-29-camera-teleop-arm-survey.md) + STS3032 on wrist_roll, gripper (user choice 2026-10-28, hardware-notes/2026-10-28-arm-4-1-component-review.md) + concept base. Replaced by v1 from the team CAD (FreeCAD) and v2 from measurements of the built arm."
+  },
+  "units": {
+    "length": "m",
+    "angle": "rad",
+    "mass": "kg",
+    "speed": "deg/s"
+  },
+  "speed_cap_fraction": 0.5,
+  "actuators": {
+    "sts3215_12v": {
+      "model": "Feetech STS3215 C018 12V",
+      "travel_deg": 360,
+      "no_load_speed_dps": 270.27,
+      "speed_cap_dps": 135.14,
+      "accel_cap_dps2": 450,
+      "accel_source": "assumed: reach the speed cap in ~0.3 s; STS3215 register 41 (0-254 x 8.7 deg/s^2) can do it in the servo; tune in P009",
+      "stall_torque_kgcm": 30,
+      "rated_torque_kgcm": 10,
+      "mass_kg": 0.055,
+      "readback": true,
+      "source": "Feetech C018 datasheet A/0 2023-07-20: 0.222 s/60deg at 12V, stall 30 kg.cm, rated 10 kg.cm"
+    },
+    "sts3032_6v": {
+      "model": "Feetech STS3032 (C001, single shaft) 6V",
+      "travel_deg": 360,
+      "no_load_speed_dps": 666.67,
+      "speed_cap_dps": 333.33,
+      "accel_cap_dps2": 1111,
+      "accel_source": "assumed: reach the speed cap in ~0.3 s; STS acceleration register like STS3215; tune in P009",
+      "stall_torque_kgcm": 4.5,
+      "rated_torque_kgcm": 1.5,
+      "mass_kg": 0.02,
+      "readback": true,
+      "source": "shop pages, not a Feetech datasheet (eckstein-shop.de, aifitlab.com): 0.09 s/60deg at 6V, stall 4.5 / rated 1.5 kg.cm at 6V, 20 g, 23.2 x 12.1 x 28.5 mm, 4096 steps/360deg; 6V rail, not the STS3215 12V bus power"
+    }
+  },
+  "joints": [
+    {
+      "name": "shoulder_pan",
+      "parent": "base_link",
+      "child": "shoulder_link",
+      "origin_xyz": [
+        0.0388353,
+        -8.97657e-09,
+        0.0624
+      ],
+      "origin_rpy": [
+        3.14159,
+        4.18253e-17,
+        -3.14159
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": -3.14159,
+      "upper": 3.14159,
+      "actuator": "sts3215_12v",
+      "limit_source": "D25 base turns a full circle (+-180deg); URDF had +-110deg"
+    },
+    {
+      "name": "shoulder_lift",
+      "parent": "shoulder_link",
+      "child": "upper_arm_link",
+      "origin_xyz": [
+        -0.0303992,
+        -0.0182778,
+        -0.0542
+      ],
+      "origin_rpy": [
+        -1.5708,
+        -1.5708,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": -1.74533,
+      "upper": 1.74533,
+      "actuator": "sts3215_12v",
+      "limit_source": "URDF"
+    },
+    {
+      "name": "elbow_flex",
+      "parent": "upper_arm_link",
+      "child": "lower_arm_link",
+      "origin_xyz": [
+        -0.11257,
+        -0.028,
+        1.73763e-16
+      ],
+      "origin_rpy": [
+        -3.63608e-16,
+        8.74301e-16,
+        1.5708
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": -1.69,
+      "upper": 1.69,
+      "actuator": "sts3215_12v",
+      "limit_source": "URDF"
+    },
+    {
+      "name": "wrist_flex",
+      "parent": "lower_arm_link",
+      "child": "wrist_link",
+      "origin_xyz": [
+        -0.1349,
+        0.0052,
+        3.62355e-17
+      ],
+      "origin_rpy": [
+        4.02456e-15,
+        8.67362e-16,
+        -1.5708
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": -1.65806,
+      "upper": 1.65806,
+      "actuator": "sts3215_12v",
+      "limit_source": "URDF (+-95deg) inside STS3215 360deg travel; was MG996R +-79.5deg"
+    },
+    {
+      "name": "wrist_roll",
+      "parent": "wrist_link",
+      "child": "gripper_link",
+      "origin_xyz": [
+        5.55112e-17,
+        -0.0611,
+        0.0181
+      ],
+      "origin_rpy": [
+        1.5708,
+        0.0486795,
+        3.14159
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": -2.74385,
+      "upper": 2.84121,
+      "actuator": "sts3032_6v",
+      "limit_source": "URDF (-157..+163deg), inside STS3032 360deg travel; was MG996R -64..+95deg; cable twist through the roll not checked"
+    },
+    {
+      "name": "gripper",
+      "parent": "gripper_link",
+      "child": "finger_crank_link",
+      "origin_xyz": [
+        0.006992,
+        0.000341,
+        -0.0098
+      ],
+      "origin_rpy": [
+        -1.5708,
+        0,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "lower": 0.155683,
+      "upper": 1.050166,
+      "actuator": "sts3032_6v",
+      "limit_source": "shell v1 gear crank in wrist_gripper_v1: 8.92deg = fingers touching, 60.17deg = 57 mm open; one servo drives two meshing gears and a parallel four-bar, so use gripper_kinematics, not this angle alone, for the finger position"
+    }
+  ],
+  "soft_limits": {
+    "note": "Stricter than the joint limits; the adapter clamps targets to these. From cad/shell_v1 checks and docs/research/hardware-notes/2026-10-29-h1-design-review.md.",
+    "joints": {
+      "shoulder_lift": {
+        "lower": -1.5708,
+        "source": "shell v1: upper link meets the column at -100deg"
+      },
+      "elbow_flex": {
+        "upper": 1.22173,
+        "source": "shell v1: wrist/gripper meet the base drum from +80deg with the shoulder at 0; 70deg keeps a 10deg margin"
+      }
+    },
+    "pairs": [
+      {
+        "joints": [
+          "shoulder_lift",
+          "elbow_flex"
+        ],
+        "max_sum": 1.5708,
+        "source": "shell v1 shoulder x elbow sweep (15deg grid, pan 0, wrist 0): every colliding pose had shoulder_lift + elbow_flex >= 100deg (forearm/gripper fold into the base drum); 90deg keeps a 10deg margin. Wrist and pan variations not swept."
+      }
+    ],
+    "tcp_max_radius_from_pan_axis_m": 0.38,
+    "tcp_max_radius_source": "horizontal distance from the shoulder_pan axis to the TCP (arm_spec.tcp_radius_m). Far reach dropped (user 2026-10-29); the zero pose sits at ~0.35 m and top-down picks within ~0.31 m; stretched out at ~0.44 m the shoulder needs ~9.4 kg.cm of the STS3215's rated 10 (estimate, docs/research/hardware-notes/2026-10-29-h1-design-review.md)",
+    "tcp_min_radius_from_pan_axis_m": 0.14,
+    "tcp_min_radius_source": "motion test and workspace sweep 2026-10-31: tool straight down, open fingers hit the column at r <= 110 mm; folded with the tool tilted they hit it at r 130-135 mm. See docs/research/hardware-notes/2026-10-31-motion-test-results.md",
+    "floor": {
+      "note": "The arm must stay above the table and the base. Workspace sweep 2026-10-31: 1232 of 5460 poses that the other limits allowed overlapped them. Radii are the shell parts rounded up; a tool disc lies across the tool, so it adds nothing when the tool points straight down",
+      "table_z_m": 0.0,
+      "clearance_m": 0.002,
+      "frames": [
+        {
+          "frame": "lower_arm_link",
+          "radius_m": 0.03
+        },
+        {
+          "frame": "wrist_link",
+          "radius_m": 0.03
+        },
+        {
+          "frame": "gripper_link",
+          "radius_m": 0.03
+        }
+      ],
+      "palm_disc": {
+        "along_m": 0.03,
+        "radius_m": 0.03
+      },
+      "finger_outer_past_half_opening_m": 0.031,
+      "legs": {
+        "angles_deg": [
+          36,
+          108,
+          180,
+          252,
+          324
+        ],
+        "root_radius_m": 0.075,
+        "tip_radius_m": 0.17,
+        "half_width_m": 0.01,
+        "top_z_m": 0.014
+      },
+      "drum": {
+        "radius_m": 0.08,
+        "top_z_m": 0.07
+      },
+      "finger_length_m": 0.067
+    }
+  },
+  "tcp": {
+    "name": "finger_pad_center",
+    "parent": "gripper_link",
+    "origin_xyz": [
+      0.0,
+      0.0,
+      -0.084
+    ],
+    "origin_rpy": [
+      0,
+      3.14159,
+      0
+    ],
+    "source": "shell v1: pad centre on the wrist_roll axis at the 40 mm holding width. It moves with the opening: use arm_spec.tcp_xyz_for_opening. Replaces the SO-101 URDF point, 7.9 mm off the roll axis"
+  },
+  "link_mass_kg": {
+    "base_link": 0.3209,
+    "shoulder_link": 0.1647,
+    "upper_arm_link": 0.1256,
+    "lower_arm_link": 0.1703,
+    "wrist_link": 0.0412,
+    "gripper_link": 0.0705
+  },
+  "link_mass_note": "Estimates from cad/shell_v1: printed part volume x 1.24 g/cm3 x 0.45 (not sliced or weighed), STS3215 55 g, STS3032 20 g, horn 4 g, 6806 bearing 22 g (assumed), lazy susan 70 g. gripper_link includes the fingers and links. No boards, wires or screws",
+  "base": {
+    "status": "cad",
+    "diameter_m": 0.15,
+    "height_m": 0.056,
+    "turntable_bearing": true,
+    "pan_range_deg": 360,
+    "table_z_m": 0.0
+  },
+  "tolerances": {
+    "position_mm_vs_reference": 1.0,
+    "mass_fraction": 0.1,
+    "after_build_position_mm": 2.0,
+    "after_build_angle_deg": 1.0,
+    "exact": [
+      "joint limits",
+      "joint axes",
+      "speed caps"
+    ]
+  },
+  "gripper_kinematics": {
+    "max_opening_mm": 57,
+    "holding_opening_mm": 40,
+    "pad_center_behind_tip_mm": 13.0,
+    "source": "computed from cad/shell_v1/wrist_gripper_v1.py at each opening, not measured; fingertip_mm is along the tool from the wrist_roll joint",
+    "by_opening": [
+      {
+        "opening_mm": 0,
+        "crank_deg": 8.92,
+        "fingertip_mm": 106.3
+      },
+      {
+        "opening_mm": 10,
+        "crank_deg": 16.26,
+        "fingertip_mm": 105.2
+      },
+      {
+        "opening_mm": 20,
+        "crank_deg": 23.89,
+        "fingertip_mm": 103.4
+      },
+      {
+        "opening_mm": 30,
+        "crank_deg": 32.01,
+        "fingertip_mm": 100.7
+      },
+      {
+        "opening_mm": 40,
+        "crank_deg": 40.92,
+        "fingertip_mm": 97.0
+      },
+      {
+        "opening_mm": 50,
+        "crank_deg": 51.26,
+        "fingertip_mm": 91.8
+      },
+      {
+        "opening_mm": 57,
+        "crank_deg": 60.17,
+        "fingertip_mm": 86.7
+      }
+    ]
+  }
+}
