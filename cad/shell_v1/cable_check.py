@@ -1,8 +1,9 @@
 """Cable length and slack across each joint of shell v1, from the routing features in the CAD.
 
 Run: freecadcmd cable_check.py (writes out/motion/cable_check.json)
-A span is a straight line between the last fixing point on each side of a joint. Assumed: the bundle bends no tighter
-than MIN_BEND_MM and MARGIN_MM of extra length. Cable stiffness, fatigue and real connector positions are not modelled.
+A span is a straight line between the last fixing point on each side of a joint, plus MARGIN_MM. It gives a cable length
+and how far a slack loop may bulge. It does not prove bend radius or strain: cable stiffness, fatigue and real connector
+positions are not modelled, so this has no pass or fail.
 """
 import json
 import math
@@ -17,7 +18,6 @@ import motion_test as T  # noqa: E402
 B, M, WG = T.B, T.M, T.WG
 import links_v1 as LK  # noqa: E402
 V, Part = T.V, T.Part
-MIN_BEND_MM = 15.0
 MARGIN_MM = 20.0
 EFFECTIVE = ("E_mid_compensated", "D_survey_compensated")
 
@@ -117,8 +117,8 @@ def span(arm, name, joint, a, part_a, b, part_b, near=()):
     task_sag, task_radius = arc_for(min(r["route"] for r in task_rows), task_length)
     return dict(span=name, joint=joint, soft_range_deg=[round(lo, 1), round(hi, 1)], task_range_deg=task,
                 chord_min=min(r["chord"] for r in rows), chord_max=max(r["chord"] for r in rows), route_max=max(r["route"] for r in rows),
-                cable_mm=round(length, 1), task_cable_mm=round(task_length, 1), task_sagitta_mm=round(task_sag, 1), task_bend_radius_mm=round(task_radius, 1),
-                worst_sagitta_mm=round(sagitta, 1), worst_bend_radius_mm=round(radius, 1), bend_ok=radius >= MIN_BEND_MM,
+                cable_mm=round(length, 1), task_cable_mm=round(task_length, 1), task_sagitta_mm=round(task_sag, 1),
+                worst_sagitta_mm=round(sagitta, 1),
                 rows=rows)
 
 
@@ -134,7 +134,7 @@ def main():
     ]
     roll_span = (wrist_neck() - palm_exit()).Length
     z_top = T.BV.Z_TT if hasattr(T.BV, "Z_TT") else None
-    out = dict(spans=spans, min_bend_mm=MIN_BEND_MM, margin_mm=MARGIN_MM,
+    out = dict(spans=spans, margin_mm=MARGIN_MM,
                pan=dict(wrap_radius_mm=B.P["cable_hole_r"], wrap_length_mm=round(2 * math.pi * B.P["cable_hole_r"], 1),
                         annulus_mm=[T.BV.B["tt_boss_r"], T.BV.B["ls_hole"] / 2], hole_d_mm=B.P["cable_hole_d"],
                         coil_height_mm=T.BV.B["ls_t"], turntable_z=z_top),
@@ -144,9 +144,9 @@ def main():
     with open(os.path.join(HERE, "out", "motion", "cable_check.json"), "w") as f:
         json.dump(out, f, indent=1)
     for s in spans:
-        print("%-24s %-14s chord %5.1f..%5.1f route max %5.1f cable %5.1f (task %5.1f) sag %5.1f (task %5.1f) bend R %6.1f (task %6.1f) ok=%s" % (
+        print("%-24s %-14s chord %5.1f..%5.1f route max %5.1f cable %5.1f (task %5.1f) bulge %5.1f (task %5.1f)" % (
             s["span"], s["joint"], s["chord_min"], s["chord_max"], s["route_max"], s["cable_mm"], s["task_cable_mm"],
-            s["worst_sagitta_mm"], s["task_sagitta_mm"], s["worst_bend_radius_mm"], s["task_bend_radius_mm"], s["bend_ok"]))
+            s["worst_sagitta_mm"], s["task_sagitta_mm"]))
         worst = max(s["rows"], key=lambda r: r["through"])
         print("   most inside parts at %.1f deg: %s" % (worst["angle"], {k: v for k, v in worst["inside"].items() if v}))
     print(json.dumps({k: out[k] for k in ("pan", "roll_twist", "forearm_exit_slot_mm", "forearm_channel_d_mm")}))

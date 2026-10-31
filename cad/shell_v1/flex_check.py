@@ -3,8 +3,9 @@
 Run: freecadcmd flex_check.py (writes out/motion/flex_check.json; run motion_test.py first for its poses)
 Each link is clamped at its proximal joint with a rigid distal joint. Six unit loads give its compliance, then every
 task pose adds up the link deflections at the TCP. E_MPA stands in for a printed part: results scale with 1/E.
-Conservative: the servos inside the links add no stiffness, and a link's own weight is applied at its distal joint.
-Not modelled: bearings, servo backlash and compliance, the screwed split of the forearm, layer direction.
+The forearm is held only by the crush ribs next to each hub, so its windows carry the load with no help from the servo.
+A link's own weight is applied at its distal joint. It also reports the forearm's stress at the wrist servo's stall.
+Not modelled: palm and fingers, bearings, servo backlash and compliance, the screwed split of the forearm, layer direction.
 The forearm uses a simplified shape (see simple_forearm); the other links use the CAD part.
 """
 import json
@@ -27,6 +28,8 @@ POISSON = 0.35
 MESH_TRIES = (("del2d", 1.25, 5), ("meshadapt", 1.25, 5), ("auto", 2.5, 5), ("auto", 1.5, 5), ("auto", 2.5, 7))
 WORK = os.path.join(HERE, "out", "motion", "fem")
 SCENES = ("D_survey_compensated", "E_mid_compensated")
+RIB_BAND_MM, RIB_BAND_INSIDE_MM = 4.0, 1.0
+STALL_NMM = 30 * 98.1      # STS3215 stall, 30 kg.cm
 
 
 def tool(name):
@@ -141,13 +144,26 @@ def simple_forearm():
     tube = tube.cut(Part.makeCylinder(LK.H["channel_r"], length - 60, start, V(u[0], 0, u[1]))).removeSplitter()
     if LK.FOREARM_FRAMES:
         tube = tube.cut(LK.servo_window(e, u, y_front)).cut(LK.servo_window(w, back, y_front)).removeSplitter()
-    return tube
+    for t in (45.0, length - 45.0):
+        ends = [(e[0] + u[0] * (t + d), e[1] + u[1] * (t + d)) for d in (-LK.H["exit_len"] / 2, LK.H["exit_len"] / 2)]
+        tube = tube.cut(B.band_xz(ends, 4.0, yc - r - 1, yc))
+    return tube.removeSplitter()
+
+
+def near_hub_ribs(p, shaft, along):
+    """Nodes on the side walls where the crush ribs next to a hub grip the servo; along points into the tube."""
+    d = B.STS
+    dx, dz = p[0] - shaft.x, p[2] - shaft.z
+    x, n = dx * along[0] + dz * along[1], -dx * along[1] + dz * along[0]
+    return abs(x - (d["shaft_off"] - d["L"] / 4)) <= RIB_BAND_MM and abs(n) >= d["W"] / 2 - RIB_BAND_INSIDE_MM
 
 
 def links(arm):
     shapes = arm.parts
     forearm = simple_forearm()
     x_roll_cage = B.WR.x - 30.0
+    length = math.hypot(B.WF.x - B.EL.x, B.WF.z - B.EL.z)
+    along = ((B.WF.x - B.EL.x) / length, (B.WF.z - B.EL.z) / length)
     table = T.BV.Z_TT + T.BV.B["tt_t"]
     return [
         dict(name="column", shape=shapes["column"][0], carrier="column", own=("column", "servo_shoulder", "servo_clamp_shoulder"),
@@ -155,10 +171,32 @@ def links(arm):
         dict(name="upper_link", shape=shapes["upper_link"][0], carrier="upper_link", own=("upper_link", "horn_shoulder", "bearing_shoulder", "bearing_elbow", "horn_elbow"),
              next="elbow_flex", ref=B.EL, fixed=lambda p: radial(p, B.SH) <= 26.0, rigid=lambda p: radial(p, B.EL) <= 26.0),
         dict(name="forearm", shape=forearm, carrier="forearm_front", own=("forearm_front", "forearm_back", "servo_elbow", "servo_wrist_flex"),
-             next="wrist_flex", ref=B.WF, fixed=lambda p: radial(p, B.EL) <= 24.0, rigid=lambda p: radial(p, B.WF) <= 24.0),
+             next="wrist_flex", ref=B.WF, fixed=lambda p: near_hub_ribs(p, B.EL, along),
+             rigid=lambda p: near_hub_ribs(p, B.WF, (-along[0], -along[1]))),
         dict(name="wrist", shape=shapes["wrist"][0], carrier="wrist", own=("wrist", "servo_wrist_roll", "horn_wrist_flex"),
              next="wrist_roll", ref=B.WR, fixed=lambda p: radial(p, B.WF) <= 20.0, rigid=lambda p: p[0] >= x_roll_cage),
     ]
+
+
+def stall_stress_mpa(name, nodes):
+    """Largest von Mises stress in a link with the servo's stall torque about its joint axis (y). Rerun of its deck."""
+    deck = open(os.path.join(WORK, name + ".inp")).read()
+    rot_node = max(nodes) + 2
+    step = "*STEP\n*STATIC\n*CLOAD\n%d, 2, %g\n*EL PRINT, ELSET=EALL\nS\n*END STEP\n" % (rot_node, STALL_NMM)
+    job = name + "_stall"
+    with open(os.path.join(WORK, job + ".inp"), "w") as f:
+        f.write(deck[:deck.index("*STEP")] + step)
+    subprocess.run([tool("ccx"), "-i", job], cwd=WORK, check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, OMP_NUM_THREADS="4"))
+    worst = 0.0
+    for line in open(os.path.join(WORK, job + ".dat")):
+        f = line.split()
+        if len(f) == 8:
+            try:
+                sx, sy, sz, sxy, sxz, syz = map(float, f[2:])
+            except ValueError:
+                continue
+            worst = max(worst, math.sqrt(0.5 * ((sx - sy) ** 2 + (sy - sz) ** 2 + (sz - sx) ** 2) + 3 * (sxy ** 2 + sxz ** 2 + syz ** 2)))
+    return round(worst, 2)
 
 
 def matvec(r, v):
@@ -205,8 +243,11 @@ def main():
         rigid = [k for k, v in nodes.items() if link["rigid"](v)]
         link["c"] = compliance(link["name"], nodes, elements, fixed, rigid, link["ref"])
         print("%-11s %6d nodes %6d elements, fixed %d, rigid %d, solids %d, valid %s" % (link["name"], len(nodes), len(elements), len(fixed), len(rigid), len(link["shape"].Solids), link["shape"].isValid()), flush=True)
+        if link["name"] == "forearm":
+            stall = stall_stress_mpa("forearm", nodes)
+            print("forearm stress at wrist servo stall: %.1f MPa (E %g MPa, coarse mesh)" % (stall, E_MPA), flush=True)
         data.append(link)
-    out = dict(E_MPa=E_MPA, cantilever=check, scenes={},
+    out = dict(E_MPa=E_MPA, cantilever=check, scenes={}, forearm_stall_mpa=stall,
                compliance={d["name"]: d["c"] for d in data})
     for scene in SCENES:
         report = json.load(open(os.path.join(HERE, "out", "motion", scene + ".json")))
@@ -229,7 +270,8 @@ def main():
         change = max(rows, key=lambda r: r["load_change_mm"])
         out["scenes"][scene] = dict(worst=worst, worst_load_change=change, rows=rows)
         print(scene, "worst", worst, "| largest change from block or press", change["move"], change["load_change_mm"], flush=True)
-    with open(os.path.join(HERE, "out", "motion", "flex_check.json"), "w") as f:
+    suffix = "_tube" if os.environ.get("SHELL_FOREARM") == "tube" else ""
+    with open(os.path.join(HERE, "out", "motion", "flex_check%s.json" % suffix), "w") as f:
         json.dump(out, f)
     print("done", flush=True)
 

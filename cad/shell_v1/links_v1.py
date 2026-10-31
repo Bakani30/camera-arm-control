@@ -197,7 +197,8 @@ FOREARM_FRAMES = os.environ.get("SHELL_FOREARM") != "tube"
 # Distances along the case are from its centre; rib_x stays past the window so the far ribs keep their full length.
 # Screws tie the two halves just past each frame; vents move onto the hub, away from the section the window thins.
 FRAME = dict(wall=3.0, window_from=5.5, window_to=19.5, window_margin=8.0, window_r=3.0, rib_x=21.0,
-             screw_t=41.0, screw_n=13.0, vent_t=3.0, vent_half=6.0)
+             screw_t=41.0, vent_t=3.0, vent_half=6.0)
+TUBE_SCREW_SEAT, TUBE_SCREW_END = 8.5, 11.0   # from the tube axis; the surface is 13.2 mm away at 13 mm off centre
 
 
 def servo_box(shaft, along, y_front):
@@ -264,19 +265,21 @@ def build_forearm():
     # split along the tube; M3 screws from the back half into the front half
     front = tube.common(S.box(-500, 500, yc, 500, -500, 500))
     back = tube.common(S.box(-500, 500, -500, yc, -500, 500))
-    screw_pts = [(e[0] - 16 * u[0], e[1] - 16 * u[1])]
-    for t, s in ((L / 2, 1), (L / 2, -1)):
-        screw_pts.append((e[0] + u[0] * t + n[0] * 13 * s, e[1] + u[1] * t + n[1] * 13 * s))
+    # (x, z, head seat y, pilot end y). In the hubs the head sits near the back face; on the round tube
+    # the surface curves away, so those screws get a flat seat cut below it and a pilot that stops inside
+    hub_seat, hub_end = yc - r + 3, yc + 14
+    tube_seat, tube_end = yc - TUBE_SCREW_SEAT, yc + TUBE_SCREW_END
+    screw_pts = [(e[0] - 16 * u[0], e[1] - 16 * u[1], hub_seat, hub_end)]
+    tube_screws = [L / 2] + ([FRAME["screw_t"], L - FRAME["screw_t"]] if FOREARM_FRAMES else [])
     for s in (1, -1):
-        screw_pts.append((w[0] + n[0] * 15.5 * s, w[1] + n[1] * 15.5 * s))
-        if FOREARM_FRAMES:
-            for t in (FRAME["screw_t"], L - FRAME["screw_t"]):
-                screw_pts.append((e[0] + u[0] * t + n[0] * FRAME["screw_n"] * s, e[1] + u[1] * t + n[1] * FRAME["screw_n"] * s))
+        screw_pts.append((w[0] + n[0] * 15.5 * s, w[1] + n[1] * 15.5 * s, hub_seat, hub_end))
+        for t in tube_screws:
+            screw_pts.append((e[0] + u[0] * t + n[0] * 13 * s, e[1] + u[1] * t + n[1] * 13 * s, tube_seat, tube_end))
     outside = back.BoundBox.YMin - 1                                # the frames stand proud of the tube's back
-    for x, z in screw_pts:
-        front = front.cut(S.cyl_y(x, z, H["pilot"] / 2, yc - 0.1, yc + 14))
+    for x, z, seat, end in screw_pts:
+        front = front.cut(S.cyl_y(x, z, H["pilot"] / 2, yc - 0.1, end))
         back = back.cut(S.cyl_y(x, z, H["free"] / 2, outside, yc + 0.1))
-        back = back.cut(S.cyl_y(x, z, H["screw_cb"] / 2, outside, yc - r + 3))
+        back = back.cut(S.cyl_y(x, z, H["screw_cb"] / 2, outside, seat))
     # vents in the back half over each servo (review item 7): the tube is closed and STS3215s run warm
     vent_t, vent_half = (FRAME["vent_t"], FRAME["vent_half"]) if FOREARM_FRAMES else (11.0, 8.0)
     for centre in ((e[0] + u[0] * vent_t, e[1] + u[1] * vent_t), (w[0] - u[0] * vent_t, w[1] - u[1] * vent_t)):

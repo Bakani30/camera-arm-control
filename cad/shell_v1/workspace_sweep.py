@@ -49,6 +49,8 @@ def random_sweep(arm, wanted, seed=20261031):
     with open(os.path.join(HERE, "out", "motion", "workspace_random.json"), "w") as f:
         json.dump(dict(seed=seed, drawn=drawn, tried=tried, hits=hits), f)
     print("random allowed poses", tried, "of", drawn, "drawn, with overlap", len(hits), flush=True)
+    if hits:
+        os._exit(1)
 
 
 def main():
@@ -67,11 +69,11 @@ def main():
             for elbow in grid(*ranges["elbow_flex"], step):
                 for wrist in grid(*ranges["wrist_flex"], step):
                     q = dict(shoulder_lift=lift, elbow_flex=elbow, wrist_flex=wrist)
-                    if T.arm_spec.soft_limit_problems(B.SPEC, {k: math.radians(v) for k, v in q.items()}, opening):
-                        continue
                     for pan in PANS:
+                        pose = dict(q, shoulder_pan=pan)                # the legs make the limits depend on the pan
+                        if T.arm_spec.soft_limit_problems(B.SPEC, {k: math.radians(v) for k, v in pose.items()}, opening):
+                            continue
                         tried += 1
-                        pose = dict(q, shoulder_pan=pan)
                         posed = {n: B.posed(s, n, pose) for n, s in shapes.items()}
                         posed.update(table)
                         found = T.overlaps(posed, opening)
@@ -86,6 +88,8 @@ def main():
     with open(os.path.join(HERE, "out", "motion", "workspace_sweep.json"), "w") as f:
         json.dump(out, f)
     print("allowed poses", tried, "with overlap", len(hits), flush=True)
+    if hits:
+        os._exit(1)
 
 
 main()

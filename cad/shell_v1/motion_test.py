@@ -29,6 +29,8 @@ V = App.Vector
 OVERLAP_MM3 = 1.0
 GRIP_CONTACT_MM3 = 100.0  # a pad on the block at the holding width: ~0.1 mm over the pad area
 NEAR_MM = 3.0
+BIG_STEP_DEG = 45.0     # one sample to the next: the path jumped, so nothing between them was checked
+MUST_PASS = ("D_survey_compensated", "E_mid_compensated")
 TIP_MARGIN_MM = 20.0
 MASS_FILL = 0.45
 PLA_G_MM3 = 1.24e-3
@@ -157,8 +159,11 @@ class Arm:
             total += (a.cross(tcp - o).Length * math.radians(0.1)) ** 2
         return round(math.sqrt(total), 3)
 
-    def tip_margin_mm(self, q_deg, block_g, tool):
-        """Distance from the whole machine's CoM to the leg-tip outline, without the clamp; negative tips over."""
+    def tip_margin_mm(self, q_deg, block_g, tool, force_n=0.0):
+        """How far the load on the base sits inside the leg-tip outline, without the clamp; negative tips over.
+
+        force_n pushes up at the TCP (pressing a button): it takes weight off the base and shifts what is left away.
+        """
         total, moment = 0.0, V(0, 0, 0)
         for name, (m, c) in self.mass.items():
             total += m
@@ -166,7 +171,10 @@ class Arm:
         tcp = self.point(tool, "gripper_palm", q_deg)
         total += block_g
         moment += tcp * block_g
-        com = moment * (1.0 / total)
+        force_g = force_n / 9.81e-3
+        if force_g >= total:
+            return -1e9                # the arm lifts the whole machine
+        com = (moment - tcp * force_g) * (1.0 / (total - force_g))
         radius = math.hypot(com.x - B.PAN.x, com.y - B.PAN.y)
         angle = math.degrees(math.atan2(com.y - B.PAN.y, com.x - B.PAN.x)) % 360
         tips = sorted((180 + 72 * k) % 360 for k in range(BV.B["legs"]))
@@ -174,6 +182,20 @@ class Arm:
         half = math.radians(36.0)
         edge = BV.B["leg_tip_r"] * math.cos(half) / math.cos(math.radians(angle - lower) - half)
         return round(edge - radius, 1)
+
+
+def lift_off_force_n(arm, q_deg, block_g, tool, limit_n=50.0):
+    """The upward force at the TCP that starts to tip the unclamped base in this pose."""
+    if arm.tip_margin_mm(q_deg, block_g, tool, limit_n) > 0:
+        return limit_n
+    low, high = 0.0, limit_n
+    for _ in range(24):
+        mid = (low + high) / 2
+        if arm.tip_margin_mm(q_deg, block_g, tool, mid) > 0:
+            low = mid
+        else:
+            high = mid
+    return round(low, 2)
 
 
 def bbox_gap(a, b):
@@ -272,7 +294,9 @@ def run_move(arm, move, layout, tcp, samples, baseline):
             if index in (0, samples // 2, samples - 1):
                 row["near"] = near_misses(posed, baseline, sample.opening_mm)
             row["loads"] = arm.loads(q_deg, block_g, move.force_n, tool)
-            row["tip_margin_mm"] = arm.tip_margin_mm(q_deg, block_g, tool)
+            row["tip_margin_mm"] = arm.tip_margin_mm(q_deg, block_g, tool, move.force_n)
+            if move.force_n:
+                row["lift_off_n"] = lift_off_force_n(arm, q_deg, block_g, tool)
             row["sensitivity_mm"] = arm.sensitivity_mm_per_01deg(q_deg, tool)
             finger = arm.point(tool, "gripper_palm", q_deg)
             fixed_tcp = tcp(sample.opening_mm) if callable(tcp) else tcp
@@ -280,7 +304,7 @@ def run_move(arm, move, layout, tcp, samples, baseline):
             row["tcp_to_fingers_mm"] = round((finger - commanded).Length, 2)
             row["finger_center_mm"] = [round(finger.x, 1), round(finger.y, 1), round(finger.z, 1)]
         rows.append(row)
-    return dict(name=move.name, task=move.task, time_s=round(plan.time_s, 2), slowest=plan.slowest_joint,
+    return dict(name=move.name, task=move.task, time_s=round(plan.time_s, 2), slowest=plan.slowest_joint, max_step_deg=round(plan.max_step_deg, 1),
                 block=move.block, samples=rows)
 
 
@@ -299,6 +323,8 @@ def summarize(arm, result):
         over_rated=sorted(j for j, v in worst.items() if v[0] > arm.rated[j]),
         over_rated_moving=sorted(j for j, v in worst.items() if v[1] > arm.rated[j]),
         low_tip_margin=min([s["tip_margin_mm"] for s in reachable] or [None], key=lambda v: 1e9 if v is None else v),
+        big_step=result["max_step_deg"] > BIG_STEP_DEG,
+        lift_off_n=min([s["lift_off_n"] for s in reachable if "lift_off_n" in s], default=None),
     )
     result["worst_loads"] = worst
     result["errors"] = errors
@@ -314,6 +340,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     arm = Arm()
     baseline = design_contacts(arm)
+    failed = []
     print("design contacts ignored for near misses:", len(baseline), flush=True)
     for name, (layout, tcp, moves) in SCENARIOS.items():
         if wanted and name not in wanted.split(","):
@@ -327,7 +354,13 @@ def main():
             print("%-26s %5.2fs %s" % (move.name, result["time_s"], json.dumps(errors)), flush=True)
         with open(os.path.join(out_dir, name + ".json"), "w") as f:
             json.dump(report, f)
+        if name in MUST_PASS:
+            failed += [m["name"] for m in report["moves"] if m["task"] and (m["errors"]["unreachable"] or m["errors"]["limits"]
+                                                                            or m["errors"]["overlaps"] or m["errors"]["big_step"])]
     print("done", flush=True)
+    if failed:
+        print("CHECK FAILED:", failed, flush=True)
+        os._exit(1)                    # sys.exit would make freecadcmd run the file a second time
 
 
 main()

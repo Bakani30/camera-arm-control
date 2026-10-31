@@ -16,6 +16,8 @@ import shell_v1_model as B  # noqa: E402
 import arm_spec  # noqa: E402
 
 LIMIT_MM3 = 1.0
+WALL_MM = 2.0          # the thinnest wall that counts as covering a servo corner
+WALL_SEARCH_MM = 8.0   # how far beside the corner it must be
 STEP_DEG = 10
 
 
@@ -92,7 +94,7 @@ def soft_box_sweep(parts, step=10):
 
 
 def servo_fit(parts):
-    """Forearm servos: all 4 x 2 ribs must touch the case, and no case corner may stand clear of the forearm sideways."""
+    """Forearm servos: all 4 x 2 ribs must touch the case, and each case corner needs a wall of WALL_MM beside it."""
     front, back = parts["forearm_front"][0], parts["forearm_back"][0]
     e, w = B.EL, B.WF
     length = math.hypot(w.x - e.x, w.z - e.z)
@@ -106,8 +108,8 @@ def servo_fit(parts):
         bare = 0
         for v in case.Vertexes:
             sign = 1 if (v.Point - centre).dot(side) > 0 else -1
-            ray = B.Part.makeLine(v.Point + side * (0.05 * sign), v.Point + side * (40 * sign))
-            bare += ray.common(front).Length + ray.common(back).Length < 0.01
+            ray = B.Part.makeLine(v.Point + side * (0.05 * sign), v.Point + side * (WALL_SEARCH_MM * sign))
+            bare += ray.common(front).Length + ray.common(back).Length < WALL_MM
         print("%s: %d rib contacts, smallest %.2f mm3, total %.1f mm3; corners uncovered sideways %d/%d" % (
             name, len(bits), min(bits or [0]), sum(bits), bare, len(case.Vertexes)))
         bad += weak or bare > 0
@@ -143,6 +145,10 @@ def main():
     soft_bad = soft_box_sweep(parts)
     print("FK mismatches:", fails, "| gripper poses with overlaps:", grip_bad, "| allowed poses with overlaps:", soft_bad,
           "| forearm servos with a bad fit:", fit_bad)
+    if fails or grip_bad or soft_bad or fit_bad:
+        print("CHECK FAILED", flush=True)
+        sys.stdout.flush()
+        os._exit(1)                # sys.exit would make freecadcmd run the file a second time
 
 
 main()
