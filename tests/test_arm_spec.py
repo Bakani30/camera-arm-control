@@ -4,8 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from arm_spec import (DEFAULT_SPEC, V0_SPEC, crank_rad, fingertip_mm, forward_kinematics, load_spec, soft_limit_problems,
-                      soft_range, tcp_radius_m, tcp_xyz_for_opening, validate)
+import arm_spec
+from arm_spec import (DEFAULT_SPEC, V0_SPEC, crank_rad, fingertip_mm, forward_kinematics, gate_problems, load_spec,
+                      opening_for_crank, soft_limit_problems, soft_range, tcp_radius_m, tcp_xyz_for_opening, validate)
 
 # Expected values come from sources outside arm_spec: SO-101 URDF (so101_new_calib.urdf,
 # SO-ARM100 commit a758567c39), D25/D32 in docs/research/03-DECISIONS-GLOSSARY.md and the
@@ -319,6 +320,44 @@ class SmallArmSpecV1Tests(unittest.TestCase):
         q = {'shoulder_lift': 0.2177, 'elbow_flex': 0.3289, 'wrist_flex': 1.0243}
         self.assertEqual(soft_limit_problems(self.spec, q, 57), [])
         self.assertTrue(any('table' in p for p in soft_limit_problems(self.spec, q)))
+
+    def test_unknown_or_broken_values_are_problems_not_crashes(self):
+        self.assertTrue(soft_limit_problems(self.spec, {'shoulder_lfit': 1.0}))
+        for bad in (math.inf, math.nan, 'x', None):
+            self.assertTrue(soft_limit_problems(self.spec, {'elbow_flex': bad}), bad)
+        self.assertTrue(soft_limit_problems(self.spec, {}, 999))
+        self.assertTrue(soft_limit_problems(self.spec, {}, math.nan))
+
+    def test_no_opening_checks_every_row_of_the_table(self):
+        seen = []
+        real = arm_spec.fingertip_mm
+        try:
+            arm_spec.fingertip_mm = lambda spec, opening: seen.append(opening) or real(spec, opening)
+            soft_limit_problems(self.spec, {})
+        finally:
+            arm_spec.fingertip_mm = real
+        self.assertEqual(sorted(seen), [r['opening_mm'] for r in self.spec.raw['gripper_kinematics']['by_opening']])
+
+    def test_gate_needs_every_arm_joint(self):
+        pose = {'shoulder_pan': 0.0, 'shoulder_lift': 0.0, 'elbow_flex': 0.0, 'wrist_flex': 0.0, 'wrist_roll': 0.0}
+        self.assertEqual(gate_problems(self.spec, pose, 40), [])
+        short = {k: v for k, v in pose.items() if k != 'wrist_flex'}
+        self.assertTrue(any('wrist_flex' in p for p in gate_problems(self.spec, short, 40)))
+
+    def test_gate_stops_a_gripper_angle_that_disagrees_with_the_opening(self):
+        pose = {'shoulder_pan': 0.0, 'shoulder_lift': 0.0, 'elbow_flex': 0.0, 'wrist_flex': 0.0, 'wrist_roll': 0.0}
+        self.assertEqual(gate_problems(self.spec, {**pose, 'gripper': crank_rad(self.spec, 40)}, 40), [])
+        self.assertTrue(any('gripper' in p for p in gate_problems(self.spec, {**pose, 'gripper': crank_rad(self.spec, 10)}, 40)))
+
+    def test_gate_reads_the_opening_from_the_gripper_angle(self):
+        pose = {'shoulder_pan': 0.0, 'shoulder_lift': 0.2177, 'elbow_flex': 0.3289, 'wrist_flex': 1.0243, 'wrist_roll': 0.0}
+        self.assertEqual(gate_problems(self.spec, {**pose, 'gripper': crank_rad(self.spec, 57)}), [])
+
+    def test_opening_from_crank_undoes_crank_from_opening(self):
+        for opening in (0, 7, 25, 40, 57):
+            self.assertAlmostEqual(opening_for_crank(self.spec, crank_rad(self.spec, opening)), opening, places=6)
+        with self.assertRaises(ValueError):
+            opening_for_crank(self.spec, 2.0)
 
     def changed(self, edit):
         data = json.loads(Path(DEFAULT_SPEC).read_text(encoding='utf-8'))

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 DEFAULT_SPEC = Path(__file__).with_name('small_arm_v1.json')
 V0_SPEC = Path(__file__).with_name('small_arm_v0.json')  # the SO-101 reference, kept for its FK tests
 BASE_PAN_RANGE_DEG = 360  # D25: the base turns a full circle
+OPENING_SLACK_MM = 2.0  # the gripper's angle and its commanded opening may differ this much while it moves
 TRAVEL_SLACK_DEG = 1e-6  # float slack when comparing a joint range with actuator travel
 SPEED_CAP_SLACK_DPS = 0.01  # speed caps must equal speed_cap_fraction x no-load speed
 
@@ -52,8 +53,12 @@ def tcp_radius_m(spec, q):
 def soft_limit_problems(spec, q, opening_mm=None):
     """Why the pose q (rad, missing = 0) breaks soft_limits; empty list means the adapter may send it.
 
-    opening_mm is the finger opening; without it the floor check takes the worse of fully open and closed.
+    Partial poses are for CAD checks: a real command goes through gate_problems, which needs every joint.
+    opening_mm is the finger opening; without it the floor check tries every row of the gripper table.
     """
+    bad = _value_problems(spec, q)
+    if bad:
+        return bad
     problems = []
     soft = spec.raw.get('soft_limits', {})
     for j in spec.joints:
@@ -92,8 +97,9 @@ def _distance_to_leg(x, y, angle_deg, leg):
 
 def _floor_problems(spec, q, opening_mm):
     floor = spec.raw['soft_limits']['floor']
-    table = spec.raw.get('gripper_kinematics')
-    ends = (table['by_opening'][0]['opening_mm'], table['max_opening_mm'])
+    rows = spec.raw['gripper_kinematics']['by_opening']
+    if opening_mm is not None and not (_finite(opening_mm) and rows[0]['opening_mm'] <= opening_mm <= rows[-1]['opening_mm']):
+        return [f"opening {opening_mm!r} is outside {rows[0]['opening_mm']}..{rows[-1]['opening_mm']} mm"]
     px, py, _ = spec.joint('shoulder_pan').origin_xyz
     leg, drum = floor['legs'], floor['drum']
     problems = set()
@@ -119,13 +125,57 @@ def _floor_problems(spec, q, opening_mm):
     disc = floor['palm_disc']
     c = _point(spec, q, (0.0, 0.0, -disc['along_m']))
     check('palm', c, disc['radius_m'], c[2] - disc['radius_m'] * sideways)
-    for opening in ends if opening_mm is None else (opening_mm,):
+    for opening in [r['opening_mm'] for r in rows] if opening_mm is None else (opening_mm,):
         along = fingertip_mm(spec, opening) / 1000
         reach = opening / 2000 + floor['finger_outer_past_half_opening_m']
         for name, at in (('fingers', along), ('finger roots', along - floor['finger_length_m'])):
             c = _point(spec, q, (0.0, 0.0, -at))
             check(name, c, reach, c[2] - reach * sideways)
     return sorted(problems)
+
+
+def _finite(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
+def _value_problems(spec, q):
+    names = {j.name for j in spec.joints}
+    problems = [f'unknown joint {name!r}' for name in q if name not in names]
+    problems += [f'{name}: {value!r} is not a finite number' for name, value in q.items() if not _finite(value)]
+    return problems
+
+
+def gate_problems(spec, q, opening_mm=None):
+    """The last check before a command reaches a servo: every arm joint must be there, and the gripper must agree."""
+    problems = _value_problems(spec, q)
+    problems += [f'{j.name}: missing' for j in spec.joints if j.name != 'gripper' and j.name not in q]
+    if problems:
+        return problems
+    if 'gripper' in q:
+        try:
+            from_crank = opening_for_crank(spec, q['gripper'])
+        except ValueError as error:
+            return [f'gripper: {error}']
+        if opening_mm is None:
+            opening_mm = from_crank
+        elif not _finite(opening_mm) or abs(from_crank - opening_mm) > OPENING_SLACK_MM:
+            return [f'gripper: angle means {from_crank:.1f} mm open, command says {opening_mm!r}']
+    return soft_limit_problems(spec, q, opening_mm)
+
+
+def opening_for_crank(spec, angle_rad):
+    """The finger opening (mm) for a gripper servo angle; the reverse of crank_rad."""
+    deg = math.degrees(angle_rad)
+    rows = spec.raw['gripper_kinematics']['by_opening']
+    for a, b in zip(rows, rows[1:]):
+        if a['crank_deg'] - 1e-9 <= deg <= b['crank_deg'] + 1e-9:
+            return a['opening_mm'] + (b['opening_mm'] - a['opening_mm']) * (deg - a['crank_deg']) / (b['crank_deg'] - a['crank_deg'])
+    raise ValueError(f"{deg:.2f} deg is outside the gripper's range")
 
 
 def _gripper_value(spec, opening_mm, key):

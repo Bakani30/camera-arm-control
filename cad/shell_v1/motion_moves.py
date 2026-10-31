@@ -90,6 +90,7 @@ class Plan:
     samples: list
     time_s: float
     slowest_joint: str
+    max_step_deg: float = 0.0
 
 
 def fingertip_mm(opening_mm):
@@ -218,8 +219,12 @@ def solve_ik(spec, pose, tcp=None, seed=None):
     if not found:
         raise Unreachable(f'no IK solution for {pose.xyz} at pitch {pose.pitch_deg}')
     if seed:
+        # keep the pan on the seed's side of the wrap, or a path past +-180 deg reads as a full turn back
+        turns = round((seed['shoulder_pan'] - found[0]['shoulder_pan']) / (2 * math.pi))
+        for q in found:
+            q['shoulder_pan'] += turns * 2 * math.pi
         return min(found, key=lambda q: _distance(q, seed))
-    return min(found, key=lambda q: (len(soft_limit_problems(spec, q)), q['elbow_flex']))
+    return min(found, key=lambda q: (len(soft_limit_problems(spec, q, pose.opening_mm)), q['elbow_flex']))
 
 
 def joint_time_s(travel_deg, speed_dps, accel_dps2):
@@ -281,7 +286,8 @@ def plan_move(spec, move, samples=9, tcp=None):
             posed['shoulder_pan'] = math.radians(_lerp(*move.pan_sweep_deg, f))
         out.append(Sample(posed, pose.opening_mm, soft_limit_problems(spec, posed, pose.opening_mm), unreachable))
     time_s, slowest = _timing(spec, out)
-    return Plan(move, out, time_s, slowest)
+    steps = [abs(a.q[n] - b.q[n]) for a, b in zip(out, out[1:]) if not (a.unreachable or b.unreachable) for n in a.q]
+    return Plan(move, out, time_s, slowest, math.degrees(max(steps, default=0.0)))
 
 
 READY = Pose((0.25, 0.0, 0.16), pitch_deg=60.0)

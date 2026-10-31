@@ -180,6 +180,16 @@ class ArcPathTests(unittest.TestCase):
         self.assertLess(min(self.radius(s) for s in straight.samples), 0.10)
         self.assertGreater(min(self.radius(s) for s in arc.samples), 0.15)
 
+    def test_a_path_past_the_pan_stop_stays_continuous_and_is_flagged(self):
+        a, b = Pose((*polar(0.20, 170), 0.06)), Pose((*polar(0.20, -170), 0.06))
+        plan = plan_move(self.spec, Move('a', a, b, arc=True), samples=17)
+        self.assertLess(plan.max_step_deg, 10)                 # never the 350 degree swing the wrapped angle implies
+        self.assertTrue(any(s.limit_problems for s in plan.samples))
+
+    def test_plan_reports_its_largest_step(self):
+        plan = plan_move(self.spec, move_list()[1], samples=5)
+        self.assertGreater(plan.max_step_deg, 0)
+
     def test_arc_takes_the_short_way_round(self):
         a, b = Pose((*polar(0.20, 170), 0.06)), Pose((*polar(0.20, -170), 0.06))
         plan = plan_move(self.spec, Move('a', a, b, arc=True), samples=9)
