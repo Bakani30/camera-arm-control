@@ -5,4 +5,5 @@ models/
 logs/
 .DS_Store
 .venv-keypoint/
+.venv-sim/
 .claude/settings.local.json
