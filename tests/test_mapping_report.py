@@ -1,3 +1,5 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -67,7 +69,11 @@ class CliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'run.ee_target.jsonl'
             write_replay(path, 'ee_target', stream((0, A, 'track'), (33, A, 'track')))
-            self.assertEqual(main([str(path), '--targets']), 0)
+            printed = io.StringIO()
+            with contextlib.redirect_stdout(printed):
+                self.assertEqual(main([str(path), '--targets']), 0)
+            self.assertIn('segment 1', printed.getvalue())
+            self.assertIn('target 5: not reached', printed.getvalue())
 
 
 if __name__ == '__main__':
