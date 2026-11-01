@@ -264,6 +264,18 @@ class MockArmTests(unittest.TestCase):
         self.assertEqual(arm.status, 'moving')
         self.assertIsNone(arm.problem)
 
+    def test_render_default_is_unchanged(self):
+        arm = MockArm()
+        self.assertTrue(np.array_equal(render(arm), render(arm, box=None, marks=())))
+
+    def test_render_draws_box_and_marks(self):
+        arm = MockArm()
+        plain = render(arm)
+        box = ((.18, -.12, .04), (.33, .12, .20))
+        with_box = render(arm, box=box)
+        self.assertFalse(np.array_equal(plain, with_box))
+        self.assertFalse(np.array_equal(with_box, render(arm, box=box, marks=((.25, 0., .12),))))
+
     def test_render_changes_when_the_point_moves(self):
         arm = MockArm()
         empty = render(arm)

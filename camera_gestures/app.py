@@ -29,9 +29,12 @@ def main():
     parser.add_argument('--calibration', type=Path, help='file from camera_gestures.calibration; turns on metres, needs --palm-length-m')
     parser.add_argument('--palm-length-m', type=float, help="user's wrist crease to middle-finger base, metres")
     parser.add_argument('--changes-only', action='store_true', help='Log to CSV only when output code changes (default logs all frames)')
+    parser.add_argument('--mapping', choices=['relative'], help='draw hand-driven targets on the mock arm and save them; needs --calibration. Moves no hardware')
     args = parser.parse_args()
     if (args.calibration is None) != (args.palm_length_m is None):
         parser.error('--calibration and --palm-length-m go together')
+    if args.mapping and args.calibration is None:
+        parser.error('--mapping needs --calibration and --palm-length-m')
     state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
     if not args.model.is_file():
         parser.error('Model missing. Run: python -m camera_gestures.download_model')
@@ -63,6 +66,7 @@ def main():
     frame_index = 0
     previous_receipt = None
     window = 'Camera gestures - Q or Esc to quit'
+    session = target_file = None
     try:
         if not cap.isOpened():
             raise RuntimeError('Camera unavailable. Close other camera apps; check Windows camera permissions or --camera 1.')
@@ -87,11 +91,22 @@ def main():
                         focal_px=calibration.focal_px if calibration else None, palm_length_m=args.palm_length_m, principal_px=principal,
                         calibration_rms_px=calibration.rms_px if calibration else None,
                         reported_autofocus=cap.get(cv2.CAP_PROP_AUTOFOCUS),
-                        metric_units='metres from re-anchor, mirrored x/right y/down; z_m from camera')
+                        metric_units='metres from re-anchor, mirrored x/right y/down; z_m from camera',
+                        mapping=args.mapping)
         if keypoint is not None:
             from .keypoint import SHA256
             metadata.update(keypoint_model_sha256=SHA256, tensorflow=__import__('tensorflow').__version__)
         logs.joinpath(stem+'.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+        if args.mapping:
+            from arm_contracts.mock_arm import MockArm, render
+            from arm_contracts.replay import ReplayWriter
+            from .mapping import DRAG_TARGETS_M, MappingConfig
+            from .mapping_session import MappingSession
+            target_file = ReplayWriter(logs.joinpath(stem+'.ee_target.jsonl'), 'ee_target',
+                                  camera=dict(width=metadata['width'], height=metadata['height'], f_px=calibration.focal_px),
+                                  notes=f'classifier={args.classifier} palm_length_m={args.palm_length_m} principal_px={principal}')
+            session = MappingSession(MockArm(), target_file)
+            box = (MappingConfig().box_min_m, MappingConfig().box_max_m)
         with logs.joinpath(stem+'.frames.jsonl').open('w', encoding='utf-8') as frames, logs.joinpath(stem+'.csv').open('w', newline='', encoding='utf-8') as f, mp.tasks.vision.GestureRecognizer.create_from_options(options) as recognizer:
             writer = csv.writer(f)
             writer.writerow(['receipt_ms', 'gesture', 'score', 'output', 'inference_ms'])
@@ -129,6 +144,8 @@ def main():
                     gesture, score = observation['gesture'], observation['score']
                     stale = elapsed + keypoint_ms > STALE_MS
                     code, wrist, scale = step(state, control, observation, stale, now, w, h)
+                    if session:
+                        session.step(control, metric, code, now)
                     interval = now-previous_receipt if previous_receipt is not None else None
                     previous_receipt = now
                     frame_index += 1
@@ -143,7 +160,8 @@ def main():
                         keypoint_ms=keypoint_ms,
                         metric_position_m=metric.position_m if metric else None,
                         metric_z_m=metric.z_m if metric else None,
-                        metric_active=metric.active if metric else None, **observation), allow_nan=False)+'\n')
+                        metric_active=metric.active if metric else None,
+                        **(session.log_fields() if session else {}), **observation), allow_nan=False)+'\n')
                     if frame_index % 30 == 0:
                         frames.flush()
                     emit(now, gesture, score, code, elapsed)
@@ -161,9 +179,13 @@ def main():
                     for i, line in enumerate(lines):
                         cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .52, (0, 255, 255), 2)
                     cv2.imshow(window, draw(frame, observation, stale, args.threshold, target, depth))
+                    if session:
+                        cv2.imshow('mock arm', render(session.arm, box=box, marks=DRAG_TARGETS_M))
                     key = cv2.waitKey(1) & 0xFF
                     if key in (27, ord('q')) or cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
                         break
+                    if session and key == ord('r'):
+                        session.reset()
                     if handle_key(chr(key), control, wrist, scale, now):
                         state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
                     target, depth = control.target, control.depth
@@ -172,6 +194,8 @@ def main():
             finally:
                 emit(int((time.monotonic()-start)*1000), 'shutdown', 0, '00', 0)
     finally:
+        if target_file:
+            target_file.close()
         cap.release()
         cv2.destroyAllWindows()
 

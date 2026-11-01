@@ -58,12 +58,22 @@ def _grid(image, x0, y0):
         cv2.line(image, (x0 + step, y0), (x0 + step, y0 + size), (55, 55, 55), 1)
 
 
-def render(arm):
+def _guides(image, project, box, marks):
+    if box is not None:
+        cv2.rectangle(image, project(box[0]), project(box[1]), (120, 120, 200), 1)
+    for number, mark in enumerate(marks, start=1):
+        cv2.circle(image, project(mark), 7, (0, 200, 255), 1)
+        cv2.putText(image, str(number), project(mark), cv2.FONT_HERSHEY_SIMPLEX, .4, (0, 200, 255), 1)
+
+
+def render(arm, box=None, marks=()):
+    """box is (min_m, max_m) and marks are numbered positions; both only draw guides."""
     image = np.full((PANEL + 60, 2 * PANEL, 3), 30, dtype=np.uint8)
     _grid(image, MARGIN, MARGIN)
     _grid(image, PANEL + MARGIN, MARGIN)
     color = COLORS.get(arm.status, STOP_COLOR)
     for project in (_top, _side):
+        _guides(image, project, box, marks)
         points = np.array([project(p) for p in arm.trail], dtype=np.int32)
         if len(points) > 1:
             cv2.polylines(image, [points], False, (150, 150, 90), 1)
