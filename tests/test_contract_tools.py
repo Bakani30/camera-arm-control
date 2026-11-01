@@ -10,7 +10,7 @@ from arm_contracts.from_camera_log import targets_from_frames
 from arm_contracts.messages import ContractError, EndEffectorTarget, JointCommand, RobotState, Receiver, to_line
 from arm_contracts.mock_arm import MockArm, main as mock_arm_main, render
 from arm_contracts.profiles import small_arm_profile
-from arm_contracts.replay import read_replay, write_replay
+from arm_contracts.replay import ReplayWriter, read_replay, write_replay
 from arm_contracts.scripted import SAMPLE_REPLAY, circle, demo, known_points, square
 from arm_spec import forward_kinematics, load_spec, soft_limit_problems
 from camera_gestures.mapping import DRAG_TARGETS_M, MappingConfig
@@ -42,6 +42,39 @@ class ReplayFileTests(unittest.TestCase):  # section 7
         self.assertEqual(loaded, messages)
         self.assertEqual(header['kind'], 'ee_target')
         self.assertEqual(header['notes'], 'hello')
+
+    def test_stream_output_reads_back(self):
+        camera = {'width': 1280, 'height': 720, 'f_px': 900.0}
+        messages = [target(1), target(2), target(3, mode='hold')]
+        with ReplayWriter(self.path, 'ee_target', camera=camera, notes='live') as writer:
+            for message in messages:
+                writer.write(message)
+        header, loaded = read_replay(self.path)
+        self.assertEqual(loaded, messages)
+        self.assertEqual((header['camera'], header['notes']), (camera, 'live'))
+
+    def test_stream_keeps_lines_without_close(self):
+        writer = ReplayWriter(self.path, 'ee_target')
+        self.addCleanup(writer.close)
+        writer.write(target(1))
+        writer.write(target(2))
+        self.assertEqual(read_replay(self.path)[1], [target(1), target(2)])
+
+    def test_stream_with_no_messages_reads_back(self):
+        ReplayWriter(self.path, 'ee_target').close()
+        self.assertEqual(read_replay(self.path)[1], [])
+
+    def test_stream_refuses_out_of_order_seq(self):
+        with ReplayWriter(self.path, 'ee_target') as writer:
+            writer.write(target(2))
+            with self.assertRaisesRegex(ContractError, 'seq'):
+                writer.write(target(2))
+        self.assertEqual(read_replay(self.path)[1], [target(2)])
+
+    def test_stream_refuses_an_unknown_kind(self):
+        with self.assertRaisesRegex(ContractError, 'kind'):
+            ReplayWriter(self.path, 'nonsense')
+        self.assertFalse(self.path.exists())
 
     def test_first_line_is_the_header(self):
         write_replay(self.path, 'ee_target', [target(1)])

@@ -9,22 +9,56 @@ HEADER_KIND = 'replay_header'
 HEADER_FIELDS = ('created', 'kind', 'camera', 'notes')
 
 
-def write_replay(path, kind, messages, camera=None, notes='', created=None):
+def _header_line(kind, camera, notes, created):
     if kind not in KINDS:
         raise ContractError(f'unknown message kind {kind!r}')
+    header = dict(contract=f'{HEADER_KIND}/{MAJOR}.{MINOR}', created=created or datetime.now(timezone.utc).isoformat(),
+                  kind=kind, camera=camera, notes=notes)
+    return json.dumps(header, allow_nan=False, separators=(',', ':'))
+
+
+def _checked(receiver, message):
+    got = receiver.receive(message, 0.0)              # refuse here what read_replay would refuse later
+    if got.problem:
+        raise ContractError(got.problem)
+    return message
+
+
+def write_replay(path, kind, messages, camera=None, notes='', created=None):
+    header = _header_line(kind, camera, notes, created)
     messages = list(messages)
     if not messages:
         raise ContractError('a replay file needs at least one message')
-    receiver = Receiver(KINDS[kind], None)            # refuse here what read_replay would refuse later
-    for message in messages:
-        got = receiver.receive(message, 0.0)
-        if got.problem:
-            raise ContractError(got.problem)
-    header = dict(contract=f'{HEADER_KIND}/{MAJOR}.{MINOR}', created=created or datetime.now(timezone.utc).isoformat(),
-                  kind=kind, camera=camera, notes=notes)
-    lines = [json.dumps(header, allow_nan=False, separators=(',', ':'))] + [to_line(m) for m in messages]
+    receiver = Receiver(KINDS[kind], None)
+    lines = [header] + [to_line(_checked(receiver, m)) for m in messages]
     with Path(path).open('w', encoding='utf-8', newline='\n') as file:
         file.write('\n'.join(lines) + '\n')
+
+
+class ReplayWriter:
+    """A replay file written line by line, so a run that crashes keeps every message it sent."""
+
+    def __init__(self, path, kind, camera=None, notes='', created=None):
+        header = _header_line(kind, camera, notes, created)
+        self.receiver = Receiver(KINDS[kind], None)
+        self.file = Path(path).open('w', encoding='utf-8', newline='\n')
+        self._line(header)
+
+    def _line(self, line):
+        self.file.write(line + '\n')
+        self.file.flush()
+
+    def write(self, message):
+        self._line(to_line(_checked(self.receiver, message)))
+
+    def close(self):
+        self.file.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
 
 
 def _read_header(line):
