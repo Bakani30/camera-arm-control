@@ -10,6 +10,7 @@
 | P004 | โปรไฟล์แขนสองขนาด + workspace + ฉากบล็อก/ถาด/ปุ่ม | B | P001, P003 | planned (sprint 2) |
 | P005 | เลือกแขนจริง + BOM + ขออนุมัติซื้อ | C | — | in progress (sprint 1; แบบ D34 + มอเตอร์ D33, D35 เลือกแล้ว รออากร/ใบขออนุมัติ) |
 | P006 | Hybrid bubble + ซูม + One Euro + freeze + หยุดเมื่อมือหาย + UI | A | P002 | planned (sprint 2) |
+| P006-M0 | Relative mapping บน mock arm (ก้าวแรกของ P006) | A | P002 | โค้ดเสร็จใน `a/relative-mapping`, รอทดสอบกล้องจริง |
 | P007 | วัด latency + replay เข้า CI | C + B | P003 | planned (sprint 2) |
 | P008 | Gesture study → ล็อกชุดท่า | A (C ช่วยทำเครื่องมือ) | P006 | planned (sprint 3) |
 | P009 | ประกอบแขน + ตัวแปลเซอร์โว + ปุ่มหยุด + วัดชั้น A | C (ทั้งทีมประกอบ) | P005 | planned (sprint 3) |
