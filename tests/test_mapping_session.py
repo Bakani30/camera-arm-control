@@ -107,7 +107,9 @@ class SessionTests(unittest.TestCase):
     def test_records_recompute_to_the_same_targets(self):
         rig = Rig()
         rig.start()
-        sent = [rig.frame(), rig.frame(u=650., code='10'), rig.frame(u=660., code='10'), rig.frame(hand=False)]
+        sent = [rig.frame(), rig.frame(u=650., code='10'), rig.frame(u=660., code='10')]
+        rig.session.reanchor()
+        sent += [rig.frame(u=660.), rig.frame(u=680.), rig.frame(hand=False)]
         rig.session.reset()
         handle_key('r', rig.control, WRIST, SCALE, rig.now)
         sent += [rig.frame(u=700.), rig.frame(u=700., code='01'), rig.frame(u=700., usable=False)]

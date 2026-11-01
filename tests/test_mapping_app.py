@@ -124,6 +124,10 @@ class AppMappingTests(unittest.TestCase):
         logs, _ = self.run_app('--mapping', 'relative', keys=[(2, 'c'), (10, 'r')])
         self.assertEqual([i for i, r in enumerate(self.frames(logs)) if r['mapping_reset']], [10])
 
+    def test_c_key_is_logged_for_recompute(self):
+        logs, _ = self.run_app('--mapping', 'relative', keys=[(2, 'c'), (10, 'c')])
+        self.assertEqual([i for i, r in enumerate(self.frames(logs)) if r['mapping_reanchor']], [2, 10])
+
     def test_quit_before_tracking_leaves_a_readable_file(self):
         logs, _ = self.run_app('--mapping', 'relative', frames=1)
         _, messages = read_replay(next(logs.glob('*.ee_target.jsonl')))

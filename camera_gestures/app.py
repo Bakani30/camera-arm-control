@@ -186,6 +186,8 @@ def main():
                         break
                     if session and key == ord('r'):
                         session.reset()
+                    elif session and key == ord('c'):
+                        session.reanchor()
                     if handle_key(chr(key), control, wrist, scale, now):
                         state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
                     target, depth = control.target, control.depth

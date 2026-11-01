@@ -51,6 +51,23 @@ class ReanchorTests(unittest.TestCase):
         back = m.update(True, (.04, 0.), .6, True, '00', 33 + 900)
         self.assertEqual(back.position_m, moved.position_m)
         self.assertEqual(back.mode, 'track')
+        still = m.update(True, (.04, 0.), .6, True, '00', 33 + 933)
+        self.assertEqual(still.position_m, moved.position_m)
+
+    def test_reanchor_drops_lag_while_tracking(self):
+        m = RelativeMapper(RAW)
+        lagging = run(m, [HAND, (.14, 0., .5)])
+        m.reanchor()
+        still = [run(m, [(.14, 0., .5)], start=66 + i * 33) for i in range(5)]
+        self.assertTrue(all(o.position_m == lagging.position_m and o.mode == 'track' for o in still))
+
+    def test_reanchor_keeps_following_after_it(self):
+        m = RelativeMapper(FAST)
+        moved = run(m, [HAND, (.04, 0., .5)])
+        m.reanchor()
+        run(m, [(.3, .3, .5)], start=66)
+        after = run(m, [(.34, .3, .5)], start=99)
+        self.assertAlmostEqual(after.position_m[1], moved.position_m[1] - .02)
 
     def test_lag_is_dropped_on_loss(self):
         m = RelativeMapper(RAW)
@@ -212,6 +229,8 @@ class StateTests(unittest.TestCase):
     def test_drag_targets_stay_in_the_box(self):
         c = MappingConfig()
         self.assertEqual(len(DRAG_TARGETS_M), 5)
+        for p in DRAG_TARGETS_M:  # A target at the start point would count as reached at once.
+            self.assertGreater(distance(p, c.start_m), .03, p)
         for p in DRAG_TARGETS_M:
             for v, low, high in zip(p, c.box_min_m, c.box_max_m):
                 self.assertTrue(low <= v <= high, p)

@@ -59,6 +59,10 @@ class TargetTests(unittest.TestCase):
         got = target_times(stream((0, A, 'track'), (500, A, 'hold'), (1000, A, 'hold'), (1100, A, 'track')), [A])
         self.assertEqual(got, [None])
 
+    def test_timing_starts_at_the_first_track_message(self):
+        got = target_times(stream((0, B, 'hold'), (5000, B, 'track'), (6000, A, 'track'), (7000, A, 'track')), [A])
+        self.assertEqual(got, [2.])
+
     def test_each_target_times_from_the_previous_one(self):
         got = target_times(stream((0, A, 'track'), (1000, A, 'track'), (3000, B, 'track'), (4000, B, 'track')), [A, B])
         self.assertEqual(got, [1., 3.])

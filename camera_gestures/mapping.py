@@ -7,7 +7,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 
 GRIP_BY_CODE = {'01': 0.0, '10': 1.0}  # palm opens, fist closes; any other code keeps the last grip
-DRAG_TARGETS_M = ((.25, 0., .12), (.30, .08, .12), (.30, -.08, .12), (.22, .06, .07), (.28, -.06, .17))
+DRAG_TARGETS_M = ((.25, -.06, .08), (.30, .08, .12), (.30, -.08, .12), (.22, .06, .07), (.28, -.06, .17))
 MapperOutput = namedtuple('MapperOutput', 'position_m grip mode enabled')
 
 
@@ -65,6 +65,10 @@ class RelativeMapper:
         self.desired = tuple(self.config.start_m)
         self.reference = None
         self.tracking = False
+
+    def reanchor(self):
+        """The C key: take the hand's next frame as the new reference, and leave the point where it is."""
+        self._drop()
 
     def _drop(self):
         if self.tracking:

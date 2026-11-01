@@ -156,6 +156,10 @@ git pull --ff-only
 .\.venv\Scripts\python.exe -m camera_gestures.mapping_report logs/<เวลา>.ee_target.jsonl --targets
 ```
 
+วิธีเก็บผลให้ตัวเลขไม่เพี้ยน:
+- **มือนิ่ง:** วางมือนิ่งก่อน แล้วกด Space ตามด้วย C เริ่มรอบ และกด Space ก่อนยกมือออก ถ้าไม่ทำ ช่วงมือเข้าและออกจากกรอบจะถูกนับรวมใน `std`
+- **ลากไปเป้า:** เปิดโปรแกรมใหม่สำหรับรอบนี้โดยเฉพาะ ไล่เป้าตามเลข 1–5 บน mock arm แล้วใช้ `--targets` เวลาเป้าแรกนับจากกด C
+
 ลำดับการทดสอบตามเกณฑ์ใน [design](superpowers/specs/2026-11-01-m0-relative-mapping-design.md) บันทึกผลด้วย `docs/templates/experiment-record.md` ระบุเครื่อง กล้อง `f` และขนาดฝ่ามือ ถ้าไม่ผ่านให้รายงานก่อนปรับเกณฑ์ ผลรอบนี้เทียบกับ bubble ไม่ได้
 
 ## Log และข้อจำกัด

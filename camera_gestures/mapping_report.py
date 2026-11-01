@@ -27,12 +27,17 @@ def track_segments(messages):
 
 
 def target_times(messages, targets, radius_m=.01, dwell_ms=1000):
-    """Seconds to settle on each target in turn, timed from the previous one; None from the first one missed."""
+    """Seconds to settle on each target in turn, timed from the previous one; None from the first one missed.
+
+    The first target is timed from the first track message, so give the drag trial its own recording.
+    """
     times = [None]*len(targets)
-    index, started, entered = 0, messages[0].t_ms if messages else 0, None
+    index, started, entered = 0, None, None
     for m in messages:
         if index == len(targets):
             break
+        if started is None and m.mode == 'track':
+            started = m.t_ms
         if m.mode != 'track' or math.dist(m.position_m, targets[index]) > radius_m:
             entered = None
             continue

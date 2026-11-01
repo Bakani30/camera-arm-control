@@ -15,7 +15,7 @@
 
 ## ผลส่งกลับ
 - เปลี่ยนอะไร: เพิ่ม mapper, session, รายงาน และ `--mapping relative`; ไม่ใส่ flag โปรแกรมทำงานเหมือนเดิม
-- ต่างจาก design: ไฟล์ที่ OS ตัดกลางบรรทัดยังอ่านด้วย `read_replay` ไม่ได้ เพราะ reader ตั้งใจ raise; writer flush ทีละบรรทัดแทน
+- ขอบเขตไฟล์ล่ม: writer flush ทีละบรรทัด; ไฟล์ที่ OS ตัดกลางบรรทัดยังอ่านด้วย `read_replay` ไม่ได้ เพราะ reader ตั้งใจ raise
 - ตรวจอะไร: เทสต์ทั้งชุด รวม `tests/test_mapping_app.py` ที่รัน `app.main` ด้วยกล้อง, recognizer และคีย์บอร์ดปลอม
 - ยังไม่ตรวจ / ข้อจำกัด: **กล้องจริง, มือจริง, Windows และซิม NOT RUN**; เกณฑ์ตัวเลขเป็นค่าเริ่มต้นชั่วคราว; ผลรอบนี้เทียบกับ bubble ไม่ได้เพราะยังใช้ EMA (roadmap ข้อ 7); ก่อนต่อแขนจริงต้องตัดสินวิธีรับตำแหน่งแขนและแก้สัญญา
 - หลักฐาน / artifact: `tests/test_mapping*.py`; ผลกล้องจริงให้บันทึกด้วย `docs/templates/experiment-record.md`

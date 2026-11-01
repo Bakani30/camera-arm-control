@@ -19,11 +19,16 @@ class MappingSession:
         self.mapper = RelativeMapper(config)
         self.seq = 0
         self.reset_pending = False
+        self.reanchor_pending = False
         self.fields = {}
 
     def reset(self):
         self.mapper.reset()
         self.reset_pending = True
+
+    def reanchor(self):
+        self.mapper.reanchor()
+        self.reanchor_pending = True
 
     def step(self, control, metric, code, now_ms):
         output = self.mapper.update(control.armed, metric.position_m, metric.z_m, metric.active, code, now_ms)
@@ -33,9 +38,10 @@ class MappingSession:
         if self.writer is not None:
             self.writer.write(message)
         self.fields = dict(armed=control.armed, mapping_reset=self.reset_pending,
+                           mapping_reanchor=self.reanchor_pending,
                            mapping_position_m=message.position_m, mapping_mode=message.mode,
                            mapping_enabled=message.enabled, mapping_grip=message.grip)
-        self.reset_pending = False
+        self.reset_pending = self.reanchor_pending = False
         return message
 
     def log_fields(self):
@@ -50,6 +56,8 @@ def targets_from_records(records, config=MappingConfig()):
     for seq, r in enumerate(records, start=1):
         if r['mapping_reset']:
             mapper.reset()
+        if r['mapping_reanchor']:
+            mapper.reanchor()
         output = mapper.update(r['armed'], r['metric_position_m'], r['metric_z_m'], r['metric_active'],
                                r['output'], r['receipt_ms'])
         targets.append(_target(output, r['receipt_ms'], seq, 'script'))
