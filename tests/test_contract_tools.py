@@ -13,6 +13,7 @@ from arm_contracts.profiles import small_arm_profile
 from arm_contracts.replay import read_replay, write_replay
 from arm_contracts.scripted import SAMPLE_REPLAY, circle, demo, known_points, square
 from arm_spec import forward_kinematics, load_spec, soft_limit_problems
+from camera_gestures.mapping import DRAG_TARGETS_M, MappingConfig
 
 
 def target(seq=1, t_ms=None, **kw):
@@ -135,6 +136,18 @@ class ScriptedTests(unittest.TestCase):
         radius = math.hypot(x - self.pan_x, y)
         nearest = min(math.hypot(radius - r, z - h) for r, h in self.reachable)
         self.assertLess(nearest, 0.015, position)
+
+    def test_drag_targets_stay_within_the_soft_limits(self):
+        for point in DRAG_TARGETS_M:
+            self.assertReachable(point)
+
+    def test_mapping_box_stays_within_the_radius_limits(self):
+        limits = load_spec().raw['soft_limits']
+        config = MappingConfig()
+        near = math.hypot(config.box_min_m[0] - self.pan_x, 0)
+        far = math.hypot(config.box_max_m[0] - self.pan_x, config.box_max_m[1])
+        self.assertGreaterEqual(near, limits['tcp_min_radius_from_pan_axis_m'])
+        self.assertLessEqual(far, limits['tcp_max_radius_from_pan_axis_m'])
 
     def test_circle_keeps_its_radius(self):
         points = circle(center=(0.25, 0.0, 0.12), radius=0.04, points=32)
