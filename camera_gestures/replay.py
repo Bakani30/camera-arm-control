@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 from .control import HandControl
+from .metric import MetricHand
 from .pipeline import handle_key, step
 from .state import GestureOutput
 
@@ -19,7 +20,9 @@ FIXTURE_FIELDS = ('frame', 'receipt_ms', 'stale', 'hand_present', 'handedness', 
                   'landmarks', 'output', 'screen_target', 'screen_raw', 'target_active',
                   'depth_relative', 'depth_active', 'control_status', 'assigned_hand',
                   'palm_scale_px', 'depth_raw', 'depth_reference_px')
+METRIC_FIELDS = ('metric_position_m', 'metric_z_m', 'metric_active')
 SETTINGS = ('width', 'height', 'threshold', 'dwell_ms', 'drop_ms', 'assigned_hand')
+METRIC_SETTINGS = ('focal_px', 'palm_length_m', 'principal_px')
 
 
 def load(path):
@@ -76,14 +79,18 @@ def _resume(control, first):
     control.depth.value, control.depth.raw = first['depth_relative'], first['depth_raw']
     control.depth.reference = first['depth_reference_px']
     control.side = first['assigned_hand']
+    if control.metric is not None:
+        control.metric.position_m, control.metric.z_m = tuple(first['metric_position_m']), first['metric_z_m']
 
 
 def replay(records, width, height, assigned_hand='Right', threshold=.7, dwell_ms=250,
-           drop_ms=None, keys=None, resume=False):
+           drop_ms=None, keys=None, resume=False, focal_px=None, palm_length_m=None,
+           principal_px=None):
     """Return per-frame outputs; keys maps frame -> key pressed after that frame."""
     keys = keys or {}
     state = GestureOutput(threshold, dwell_ms, drop_ms=drop_ms)
-    control = HandControl(assigned_hand)
+    metric = MetricHand(focal_px, palm_length_m, principal_px) if focal_px is not None else None
+    control = HandControl(assigned_hand, metric=metric)
     if resume:
         _resume(control, records[0])
     results = []
@@ -96,7 +103,10 @@ def replay(records, width, height, assigned_hand='Right', threshold=.7, dwell_ms
                             target_active=control.target.active, depth_relative=control.depth.value,
                             depth_active=control.depth.active, control_status=control.status,
                             assigned_hand=control.side, palm_scale_px=scale, depth_raw=control.depth.raw,
-                            depth_reference_px=control.depth.reference))
+                            depth_reference_px=control.depth.reference,
+                            metric_position_m=metric.position_m if metric else None,
+                            metric_z_m=metric.z_m if metric else None,
+                            metric_active=metric.active if metric else None))
         key = keys.get(record['frame'])
         if key is not None and handle_key(key, control, wrist, scale, now):
             state = GestureOutput(threshold, dwell_ms, drop_ms=drop_ms)
@@ -105,7 +115,7 @@ def replay(records, width, height, assigned_hand='Right', threshold=.7, dwell_ms
 
 def replay_file(path):
     records, meta = load(path)
-    settings = {k: meta[k] for k in SETTINGS if k in meta}
+    settings = {k: meta[k] for k in SETTINGS + METRIC_SETTINGS if k in meta}
     keys = {int(frame): key for frame, key in meta['keys']} if 'keys' in meta else infer_keys(records)
     return records, replay(records, keys=keys, resume=meta.get('resume', False), **settings)
 
@@ -114,11 +124,16 @@ def compare(records, results, xy_tol=1e-9, depth_tol=1e-9):
     """List (frame, field, logged, replayed) where replay departs from the log."""
     mismatches = []
     for record, result in zip(records, results):
-        for field in ('output', 'target_active', 'depth_active', 'control_status', 'assigned_hand'):
+        exact = ('output', 'target_active', 'depth_active', 'control_status', 'assigned_hand')
+        close_fields = [('screen_target', xy_tol), ('screen_raw', xy_tol), ('depth_relative', depth_tol),
+                        ('depth_raw', depth_tol), ('palm_scale_px', xy_tol), ('depth_reference_px', xy_tol)]
+        if 'metric_active' in record:  # Logs from before P002 have no metric fields.
+            exact += ('metric_active',)
+            close_fields += [('metric_position_m', xy_tol), ('metric_z_m', xy_tol)]
+        for field in exact:
             if record[field] != result[field]:
                 mismatches.append((record['frame'], field, record[field], result[field]))
-        for field, tol in (('screen_target', xy_tol), ('screen_raw', xy_tol), ('depth_relative', depth_tol),
-                           ('depth_raw', depth_tol), ('palm_scale_px', xy_tol), ('depth_reference_px', xy_tol)):
+        for field, tol in close_fields:
             logged, replayed = record[field], result[field]
             if logged is None or replayed is None:
                 close = logged is replayed
@@ -135,15 +150,17 @@ def excerpt(path, first, last, out, resume=False):
     """Write frames first..last as a fixture: inputs and logged outputs only, no paths."""
     records, meta = load(path)
     keys = infer_keys(records)
-    chosen = [{k: r[k] for k in FIXTURE_FIELDS} for r in records if first <= r['frame'] <= last]
+    chosen = [{k: r[k] for k in FIXTURE_FIELDS+METRIC_FIELDS if k in r} for r in records if first <= r['frame'] <= last]
     if not chosen:
         raise ValueError(f'no frames between {first} and {last}')
-    for r in chosen:  # Post-MediaPipe logic reads x, y only.
-        r['landmarks'] = [p[:2] for p in r['landmarks']]
+    has_metric = meta.get('focal_px') is not None
+    for r in chosen:  # Only the metric palm length reads z.
+        r['landmarks'] = [p[:3] if has_metric else p[:2] for p in r['landmarks']]
     out = Path(out)
     out.with_name(out.name + '.frames.jsonl').write_text(
         ''.join(json.dumps(r) + '\n' for r in chosen), encoding='utf-8')
     fixture_meta = {k: meta[k] for k in SETTINGS + ('classifier', 'mediapipe', 'mirrored')}
+    fixture_meta.update({k: meta[k] for k in METRIC_SETTINGS if k in meta})
     fixture_meta.update(source=Path(path).name,
                         frames=[first, last], resume=resume,
                         keys=[[f, k] for f, k in sorted(keys.items()) if first <= f <= last])

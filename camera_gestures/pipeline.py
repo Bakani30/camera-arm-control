@@ -1,5 +1,6 @@
 """Post-MediaPipe per-frame logic, shared by the live app and log replay."""
 from .depth import palm_scale
+from .metric import palm_measure
 
 STALE_MS = 500
 
@@ -11,7 +12,8 @@ def step(state, control, observation, stale, now, width, height):
                         has_hand=observation['hand_present'] and not stale)
     wrist = tuple(observation['landmarks'][0][:2]) if observation['hand_present'] and not stale else None
     scale = palm_scale(observation['landmarks'], width, height) if wrist is not None else None
-    control.update(wrist, scale, now)
+    palm = palm_measure(observation['landmarks'], width, height) if wrist is not None and control.metric is not None else None
+    control.update(wrist, scale, now, palm)
     return code, wrist, scale
 
 
