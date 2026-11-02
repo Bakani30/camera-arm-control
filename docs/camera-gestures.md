@@ -119,6 +119,26 @@ git pull --ff-only
 
 รุ่น diagnostic เพิ่ม RAW/Filtered และ log ทุกเฟรม ดู [คู่มือส่งผลทีม](mediapipe-team-test.md)
 
+## แปลงตำแหน่งมือเป็นเมตร (P002)
+ปรับเทียบกล้องครั้งเดียวต่อกล้องและความละเอียด พิมพ์ checkerboard 9×6 จุดมุมใน วัดขนาดช่องจริงด้วยไม้บรรทัด แล้วถือกระดาษหลายมุมหลายระยะ กด Space เก็บภาพจนครบ 15 ภาพ:
+
+```powershell
+.\.venv\Scripts\python.exe -m camera_gestures.calibration --width 1280 --height 720 --square-mm 25
+```
+
+ผลอยู่ที่ `logs/camera_calibration.json` รันซ้ำอีกรอบแล้วเทียบค่า `f` ถ้าต่างกันมากหรือเปลี่ยนเมื่อระยะเปลี่ยน กล้องอาจ autofocus ให้แจ้ง C ก่อนใช้ค่าตายตัว
+
+วัดฝ่ามือจากรอยพับข้อมือถึงโคนนิ้วกลาง เป็นเมตร แล้วเปิดโปรแกรม:
+
+```powershell
+.\.venv\Scripts\python.exe -m camera_gestures.app --calibration logs/camera_calibration.json --palm-length-m 0.09
+```
+
+- จอแสดง `Metres: X Y Z` และ `frames.jsonl` เก็บ `metric_position_m`, `metric_z_m`, `metric_active` ส่วน JSON ของ session เก็บ `focal_px`, ความละเอียด, `principal_px`, `palm_length_m`
+- โปรแกรมปฏิเสธถ้ากล้องให้ความละเอียดไม่ตรงไฟล์ปรับเทียบ
+- X/Y เริ่มจาก 0 ที่จุดกดเริ่ม ค้างค่าเมื่อมือหายหรือพัก และไม่กระโดดตอนมือกลับเข้า; `R` กลับไป 0
+- ยังไม่มี filter และยังไม่ใช่เป้าหมายแขน งานนี้เป็นฐานของ bubble ใน P006
+
 ## Log และข้อจำกัด
 `logs/` มี CSV บันทึกผลการตรวจจับทุกเฟรมเป็นค่าเริ่มต้น (หรือระบุ `--changes-only` เพื่อบันทึกเฉพาะตอนรหัสเปลี่ยน) รวมเริ่ม/จบ และ JSON ข้อมูล environment/config ต่อ session รหัสเป็นข้อความสองหลัก หากเปิดใน Excel ให้ตั้งคอลัมน์เป็น Text เพื่อรักษาเลข 0 นำหน้า
 Timestamp คือเวลารับเฟรมในโปรแกรม ไม่ใช่เวลา exposure ของกล้อง; FPS ใน JSON คือค่าที่ driver รายงาน อาจเป็น 0 หรือไม่ตรงอัตราจริง

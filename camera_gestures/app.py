@@ -9,7 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from .state import GestureOutput
 from .observation import extract_selected
+from .calibration import load_calibration
 from .control import HandControl
+from .metric import MetricHand
 from .pipeline import STALE_MS, handle_key, step
 from .display import draw
 from .download_model import MODEL
@@ -24,8 +26,12 @@ def main():
     parser.add_argument('--threshold', type=float, default=.7)
     parser.add_argument('--dwell-ms', type=int, default=250)
     parser.add_argument('--drop-ms', type=int, default=None)
+    parser.add_argument('--calibration', type=Path, help='file from camera_gestures.calibration; turns on metres, needs --palm-length-m')
+    parser.add_argument('--palm-length-m', type=float, help="user's wrist crease to middle-finger base, metres")
     parser.add_argument('--changes-only', action='store_true', help='Log to CSV only when output code changes (default logs all frames)')
     args = parser.parse_args()
+    if (args.calibration is None) != (args.palm_length_m is None):
+        parser.error('--calibration and --palm-length-m go together')
     state = GestureOutput(args.threshold, args.dwell_ms, drop_ms=args.drop_ms)
     if not args.model.is_file():
         parser.error('Model missing. Run: python -m camera_gestures.download_model')
@@ -48,7 +54,10 @@ def main():
     start = time.monotonic()
     last_timestamp = -1
     previous = None
-    control = HandControl(args.hand)
+    calibration = load_calibration(args.calibration) if args.calibration else None
+    principal = calibration.mirrored_principal_px() if calibration else None
+    metric = MetricHand(calibration.focal_px, args.palm_length_m, principal) if calibration else None
+    control = HandControl(args.hand, metric=metric)
     target, depth = control.target, control.depth
     label = 'unlabeled'
     frame_index = 0
@@ -57,6 +66,10 @@ def main():
     try:
         if not cap.isOpened():
             raise RuntimeError('Camera unavailable. Close other camera apps; check Windows camera permissions or --camera 1.')
+        if calibration:
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, calibration.width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, calibration.height)
+            calibration.require_resolution(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         metadata = dict(platform=platform.platform(), python=platform.python_version(),
                         mediapipe=mp.__version__, opencv=cv2.__version__, camera=args.camera,
                         width=cap.get(cv2.CAP_PROP_FRAME_WIDTH), height=cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
@@ -70,7 +83,11 @@ def main():
                         depth_units='relative proxy, positive toward camera, not metres',
                         depth_formula='anchor + 1 - reference_palm_scale/current_palm_scale, clipped [-1,1]',
                         assigned_hand=args.hand, handedness_threshold=.8,
-                        classifier=args.classifier, mirrored=True, max_gap_ms=500, stale_inference_ms=STALE_MS)
+                        classifier=args.classifier, mirrored=True, max_gap_ms=500, stale_inference_ms=STALE_MS,
+                        focal_px=calibration.focal_px if calibration else None, palm_length_m=args.palm_length_m, principal_px=principal,
+                        calibration_rms_px=calibration.rms_px if calibration else None,
+                        reported_autofocus=cap.get(cv2.CAP_PROP_AUTOFOCUS),
+                        metric_units='metres from re-anchor, mirrored x/right y/down; z_m from camera')
         if keypoint is not None:
             from .keypoint import SHA256
             metadata.update(keypoint_model_sha256=SHA256, tensorflow=__import__('tensorflow').__version__)
@@ -123,7 +140,10 @@ def main():
                         assigned_hand=control.side, control_status=control.status,
                         screen_target=target.position, screen_raw=target.raw, target_active=target.active,
                         mediapipe_gesture=original_gesture, mediapipe_score=original_score,
-                        keypoint_ms=keypoint_ms, **observation), allow_nan=False)+'\n')
+                        keypoint_ms=keypoint_ms,
+                        metric_position_m=metric.position_m if metric else None,
+                        metric_z_m=metric.z_m if metric else None,
+                        metric_active=metric.active if metric else None, **observation), allow_nan=False)+'\n')
                     if frame_index % 30 == 0:
                         frames.flush()
                     emit(now, gesture, score, code, elapsed)
@@ -136,6 +156,8 @@ def main():
                              f'Inference: {elapsed:.1f} ms  stale={stale}',
                              f'MediaPipe: {original_gesture} | Label: {label}', '1=palm 2=fist 0=other N=no hand U=unlabeled',
                              'Palm=01 Fist=10; holds while hand present | Q/Esc quit']
+                    if metric and metric.z_m is not None:
+                        lines.append(f'Metres: X={metric.position_m[0]:+.3f} Y={metric.position_m[1]:+.3f} Z={metric.z_m:.3f}')
                     for i, line in enumerate(lines):
                         cv2.putText(frame, line, (12, 28+i*28), cv2.FONT_HERSHEY_SIMPLEX, .52, (0, 255, 255), 2)
                     cv2.imshow(window, draw(frame, observation, stale, args.threshold, target, depth))
