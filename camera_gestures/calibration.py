@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 MIN_VIEWS = 5
+MAX_FOCAL_STD_RATIO = .01
+MIN_STEEPEST_TILT_DEG = 20
 
 
 @dataclass(frozen=True)
@@ -19,9 +21,22 @@ class CameraCalibration:
     height: int
     rms_px: float
     views: int
+    focal_std_px: float = None
+    tilt_max_deg: float = None
 
     def save(self, path):
-        Path(path).write_text(json.dumps(asdict(self), indent=2)+'\n', encoding='utf-8')
+        Path(path).write_text(json.dumps(asdict(self), indent=2, allow_nan=False)+'\n', encoding='utf-8')
+
+    def warnings(self):
+        """Why f should not be trusted; a low rms alone does not show that f is right."""
+        found = []
+        if self.focal_std_px is None:
+            found.append('f uncertainty unknown')
+        elif self.focal_std_px > MAX_FOCAL_STD_RATIO*self.focal_px:
+            found.append(f'f uncertainty {self.focal_std_px:.1f} px is over 1% of f')
+        if self.tilt_max_deg is not None and self.tilt_max_deg < MIN_STEEPEST_TILT_DEG:
+            found.append(f'steepest view is only {self.tilt_max_deg:.0f} deg; tilt the board more')
+        return found
 
     def mirrored_principal_px(self):
         """Principal point in the flipped frame the app feeds to MediaPipe."""
@@ -55,11 +70,15 @@ def calibrate_views(image_points, pattern, square_m, width, height):
     grid[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2)*square_m
     # A webcam and a few views: fitting fewer distortion terms keeps f stable.
     flags = cv2.CALIB_ZERO_TANGENT_DIST | cv2.CALIB_FIX_K3
-    rms, camera, _, _, _ = cv2.calibrateCamera([grid]*len(image_points), image_points, (width, height),
-                                               None, None, flags=flags)
+    rms, camera, _, rvecs, _, std_intrinsics, _, _ = cv2.calibrateCameraExtended(
+        [grid]*len(image_points), image_points, (width, height), None, None, flags=flags)
     fx, fy = float(camera[0, 0]), float(camera[1, 1])
+    focal_std = (float(std_intrinsics[0, 0])+float(std_intrinsics[1, 0]))/2
+    # Rotation element zz is the cosine of the angle between board normal and camera axis.
+    tilt_max = max(math.degrees(math.acos(min(1., abs(float(cv2.Rodrigues(r)[0][2, 2]))))) for r in rvecs)
     return CameraCalibration((fx+fy)/2, fx, fy, float(camera[0, 2]), float(camera[1, 2]),
-                             width, height, float(rms), len(image_points))
+                             width, height, float(rms), len(image_points),
+                             focal_std if math.isfinite(focal_std) else None, tilt_max)
 
 
 def main():
@@ -94,6 +113,7 @@ def main():
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             found, corners = cv2.findChessboardCorners(gray, pattern)
             cv2.drawChessboardCorners(frame, pattern, corners, found)
+            frame = cv2.flip(frame, 1)  # Mirror the preview like the app; corners stay in raw pixels.
             cv2.putText(frame, f'{len(views)}/{args.views} found={found}', (12, 28),
                         cv2.FONT_HERSHEY_SIMPLEX, .7, (0, 255, 255), 2)
             cv2.imshow(window, frame)
@@ -109,8 +129,14 @@ def main():
     calibration = calibrate_views(views, pattern, args.square_mm/1000, args.width, args.height)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     calibration.save(args.out)
-    print(f'f={calibration.focal_px:.1f} px at {args.width}x{args.height}, '
-          f'rms={calibration.rms_px:.3f} px, {calibration.views} views -> {args.out}')
+    # Raw corners let a surprising f be studied without capturing again.
+    args.out.with_suffix('.views.json').write_text(json.dumps([v.reshape(-1, 2).tolist() for v in views]), encoding='utf-8')
+    uncertainty = 'unknown' if calibration.focal_std_px is None else f'{calibration.focal_std_px:.1f}'
+    print(f'f={calibration.focal_px:.1f} px (+/- {uncertainty}) at {args.width}x{args.height}, '
+          f'cx={calibration.cx_px:.0f} cy={calibration.cy_px:.0f}, rms={calibration.rms_px:.3f} px, '
+          f'steepest tilt={calibration.tilt_max_deg:.0f} deg, {calibration.views} views -> {args.out}')
+    for warning in calibration.warnings():
+        print(f'WARNING: {warning}')
 
 
 if __name__ == '__main__':

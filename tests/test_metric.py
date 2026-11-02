@@ -251,12 +251,15 @@ class ReplayMetricTests(unittest.TestCase):
         self.assertAlmostEqual(replayed[-1]['metric_z_m'], .5, places=6)
 
 
-def checkerboard_views(f, width, height, cols=9, rows=6, square=.025):
+TILTED = ((.3, 0, .5), (-.3, .2, .55), (0, .35, .6), (.2, -.3, .5), (-.2, -.2, .65), (.35, .3, .6))
+
+
+def checkerboard_views(f, width, height, cols=9, rows=6, square=.025, poses=TILTED):
     grid = np.zeros((cols*rows, 3), np.float32)
     grid[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2)*square
     camera = np.array([[f, 0, width/2], [0, f, height/2], [0, 0, 1]], np.float64)
     views = []
-    for rx, ry, tz in ((.3, 0, .5), (-.3, .2, .55), (0, .35, .6), (.2, -.3, .5), (-.2, -.2, .65), (.35, .3, .6)):
+    for rx, ry, tz in poses:
         rvec = np.array([rx, ry, 0.], np.float64)
         tvec = np.array([-.1, -.06, tz], np.float64)
         corners, _ = cv2.projectPoints(grid, rvec, tvec, camera, np.zeros(5))
@@ -271,6 +274,40 @@ class CalibrationTests(unittest.TestCase):
         self.assertEqual((result.width, result.height), (WIDTH, HEIGHT))
         self.assertLess(result.rms_px, .1)
         self.assertEqual(result.views, 6)
+
+    def noisy(self, views, sigma=.25):
+        rng = np.random.default_rng(7)
+        return [(v+rng.normal(0, sigma, v.shape)).astype(np.float32) for v in views]
+
+    def test_reports_focal_uncertainty_and_steepest_tilt(self):
+        views = self.noisy(checkerboard_views(F, WIDTH, HEIGHT))
+        result = calibrate_views(views, (9, 6), .025, WIDTH, HEIGHT)
+        self.assertGreater(result.focal_std_px, 0)
+        self.assertAlmostEqual(result.tilt_max_deg, math.degrees(math.hypot(.35, .3)), delta=.5)
+
+    def test_flat_views_are_flagged_even_when_reported_uncertainty_looks_small(self):
+        # Nearly flat views leave f unconstrained, yet OpenCV's std stays small.
+        flat = [(.02, 0, .5), (-.02, .01, .55), (0, .02, .6), (.01, -.02, .5), (-.02, -.01, .65), (.02, .02, .6)]
+        weak = calibrate_views(self.noisy(checkerboard_views(F, WIDTH, HEIGHT, poses=flat)), (9, 6), .025, WIDTH, HEIGHT)
+        self.assertLess(weak.tilt_max_deg, 20)
+        self.assertTrue(any('tilt' in warning for warning in weak.warnings()))
+
+    def test_warns_only_when_focal_length_is_weak_or_views_are_flat(self):
+        base = dict(fx_px=F, fy_px=F, cx_px=640., cy_px=360., width=WIDTH, height=HEIGHT, rms_px=.2, views=15)
+        self.assertEqual(CameraCalibration(F, focal_std_px=4., tilt_max_deg=35., **base).warnings(), [])
+        self.assertEqual(len(CameraCalibration(F, focal_std_px=40., tilt_max_deg=35., **base).warnings()), 1)
+        self.assertEqual(len(CameraCalibration(F, focal_std_px=4., tilt_max_deg=8., **base).warnings()), 1)
+        self.assertEqual(len(CameraCalibration(F, **base).warnings()), 1)
+
+    def test_loads_a_file_written_before_the_quality_fields(self):
+        result = calibrate_views(checkerboard_views(F, WIDTH, HEIGHT), (9, 6), .025, WIDTH, HEIGHT)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'camera.json'
+            result.save(path)
+            data = json.loads(path.read_text(encoding='utf-8'))
+            del data['focal_std_px'], data['tilt_max_deg']
+            path.write_text(json.dumps(data), encoding='utf-8')
+            self.assertIsNone(load_calibration(path).focal_std_px)
 
     def test_needs_enough_views(self):
         with self.assertRaises(ValueError):

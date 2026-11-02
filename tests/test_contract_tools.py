@@ -10,9 +10,10 @@ from arm_contracts.from_camera_log import targets_from_frames
 from arm_contracts.messages import ContractError, EndEffectorTarget, JointCommand, RobotState, Receiver, to_line
 from arm_contracts.mock_arm import MockArm, main as mock_arm_main, render
 from arm_contracts.profiles import small_arm_profile
-from arm_contracts.replay import read_replay, write_replay
+from arm_contracts.replay import ReplayWriter, read_replay, write_replay
 from arm_contracts.scripted import SAMPLE_REPLAY, circle, demo, known_points, square
 from arm_spec import forward_kinematics, load_spec, soft_limit_problems
+from camera_gestures.mapping import DRAG_TARGETS_M, MappingConfig
 
 
 def target(seq=1, t_ms=None, **kw):
@@ -41,6 +42,39 @@ class ReplayFileTests(unittest.TestCase):  # section 7
         self.assertEqual(loaded, messages)
         self.assertEqual(header['kind'], 'ee_target')
         self.assertEqual(header['notes'], 'hello')
+
+    def test_stream_output_reads_back(self):
+        camera = {'width': 1280, 'height': 720, 'f_px': 900.0}
+        messages = [target(1), target(2), target(3, mode='hold')]
+        with ReplayWriter(self.path, 'ee_target', camera=camera, notes='live') as writer:
+            for message in messages:
+                writer.write(message)
+        header, loaded = read_replay(self.path)
+        self.assertEqual(loaded, messages)
+        self.assertEqual((header['camera'], header['notes']), (camera, 'live'))
+
+    def test_stream_keeps_lines_without_close(self):
+        writer = ReplayWriter(self.path, 'ee_target')
+        self.addCleanup(writer.close)
+        writer.write(target(1))
+        writer.write(target(2))
+        self.assertEqual(read_replay(self.path)[1], [target(1), target(2)])
+
+    def test_stream_with_no_messages_reads_back(self):
+        ReplayWriter(self.path, 'ee_target').close()
+        self.assertEqual(read_replay(self.path)[1], [])
+
+    def test_stream_refuses_out_of_order_seq(self):
+        with ReplayWriter(self.path, 'ee_target') as writer:
+            writer.write(target(2))
+            with self.assertRaisesRegex(ContractError, 'seq'):
+                writer.write(target(2))
+        self.assertEqual(read_replay(self.path)[1], [target(2)])
+
+    def test_stream_refuses_an_unknown_kind(self):
+        with self.assertRaisesRegex(ContractError, 'kind'):
+            ReplayWriter(self.path, 'nonsense')
+        self.assertFalse(self.path.exists())
 
     def test_first_line_is_the_header(self):
         write_replay(self.path, 'ee_target', [target(1)])
@@ -136,6 +170,18 @@ class ScriptedTests(unittest.TestCase):
         nearest = min(math.hypot(radius - r, z - h) for r, h in self.reachable)
         self.assertLess(nearest, 0.015, position)
 
+    def test_drag_targets_stay_within_the_soft_limits(self):
+        for point in DRAG_TARGETS_M:
+            self.assertReachable(point)
+
+    def test_mapping_box_stays_within_the_radius_limits(self):
+        limits = load_spec().raw['soft_limits']
+        config = MappingConfig()
+        near = math.hypot(config.box_min_m[0] - self.pan_x, 0)
+        far = math.hypot(config.box_max_m[0] - self.pan_x, config.box_max_m[1])
+        self.assertGreaterEqual(near, limits['tcp_min_radius_from_pan_axis_m'])
+        self.assertLessEqual(far, limits['tcp_max_radius_from_pan_axis_m'])
+
     def test_circle_keeps_its_radius(self):
         points = circle(center=(0.25, 0.0, 0.12), radius=0.04, points=32)
         self.assertEqual(len(points), 32)
@@ -217,6 +263,18 @@ class MockArmTests(unittest.TestCase):
         self.assertEqual(arm.position, (0.3, 0.0, 0.1))
         self.assertEqual(arm.status, 'moving')
         self.assertIsNone(arm.problem)
+
+    def test_render_default_is_unchanged(self):
+        arm = MockArm()
+        self.assertTrue(np.array_equal(render(arm), render(arm, box=None, marks=())))
+
+    def test_render_draws_box_and_marks(self):
+        arm = MockArm()
+        plain = render(arm)
+        box = ((.18, -.12, .04), (.33, .12, .20))
+        with_box = render(arm, box=box)
+        self.assertFalse(np.array_equal(plain, with_box))
+        self.assertFalse(np.array_equal(with_box, render(arm, box=box, marks=((.25, 0., .12),))))
 
     def test_render_changes_when_the_point_moves(self):
         arm = MockArm()
