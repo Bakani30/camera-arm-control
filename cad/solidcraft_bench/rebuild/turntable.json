@@ -1,0 +1,23 @@
+{"commands": [
+  {"command": "parameters.add", "params": {"name": "cx", "expression": "38.8353 mm", "comment": "pan axis x (base_v1.CX)"}},
+  {"command": "parameters.add", "params": {"name": "pan_z", "expression": "62.4 mm", "comment": "pan horn face z (S.PAN.z)"}},
+  {"command": "parameters.add", "params": {"name": "z_tt", "expression": "64 mm", "comment": "turntable bottom = B.h + B.ls_t"}},
+  {"command": "parameters.add", "params": {"name": "tt_r", "expression": "70 mm"}},
+  {"command": "parameters.add", "params": {"name": "tt_t", "expression": "6 mm"}},
+  {"command": "parameters.add", "params": {"name": "boss_r", "expression": "15 mm"}},
+  {"command": "parameters.add", "params": {"name": "soften_r", "expression": "0.75 mm", "comment": "soften(1.5) fell back to r/2 in FreeCAD"}},
+  {"command": "parameters.add", "params": {"name": "cable_d", "expression": "14 mm"}},
+  {"command": "parameters.add", "params": {"name": "cable_off", "expression": "24 mm"}},
+  {"command": "parameters.add", "params": {"name": "ls_top_r", "expression": "44 mm"}},
+  {"command": "parameters.add", "params": {"name": "pilot_d", "expression": "2.5 mm"}},
+  {"command": "parameters.add", "params": {"name": "ls_bottom_xy", "expression": "40 mm"}},
+  {"command": "parameters.add", "params": {"name": "access_d", "expression": "9 mm"}},
+  {"command": "solid.cylinder", "params": {"radius": "tt_r", "height": "tt_t", "base": ["cx", 0, "z_tt"], "operation": "new", "name": "Disc", "body_name": "Turntable"}},
+  {"command": "solid.fillet", "params": {"edges": [[108.8353, 0, 70], [108.8353, 0, 64]], "radius": "soften_r", "body": "Turntable", "name": "SoftenRims"}},
+  {"command": "solid.cylinder", "params": {"radius": "boss_r", "height": "z_tt + 0.5 mm - pan_z", "base": ["cx", 0, "pan_z"], "operation": "join", "targets": ["Turntable"], "name": "Boss"}},
+  {"command": "solid.fillet", "params": {"edges": [[53.8353, 0, 64], [53.8353, 0, 62.4]], "radius": "soften_r", "body": "Turntable", "name": "SoftenBoss"}},
+  {"command": "solid.cylinder", "params": {"diameter": "cable_d", "height": "tt_t + 2 mm", "base": ["cx + cable_off", 0, "z_tt - 1 mm"], "operation": "cut", "targets": ["Turntable"], "name": "CableHole"}},
+  {"command": "solid.cylinder", "params": {"diameter": "pilot_d", "height": "6 mm", "base": ["cx + ls_top_r", 0, "z_tt - 1 mm"], "operation": "cut", "targets": ["Turntable"], "name": "Pilot"}},
+  {"command": "solid.pattern.circular", "params": {"features": ["Pilot"], "axis": {"origin": ["cx", 0, 0], "dir": [0, 0, 1]}, "count": 4, "name": "Pilots"}},
+  {"command": "solid.cylinder", "params": {"diameter": "access_d", "height": "tt_t + 2 mm", "base": ["cx + ls_bottom_xy", "ls_bottom_xy", "z_tt - 1 mm"], "operation": "cut", "targets": ["Turntable"], "name": "AccessHole"}}
+]}

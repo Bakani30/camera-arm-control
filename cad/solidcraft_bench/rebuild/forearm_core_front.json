@@ -1,0 +1,20 @@
+{"commands": [
+  {"command": "parameters.add", "params": {"name": "e_x", "expression": "97.23413500940303 mm", "comment": "elbow axis x (links_v1.EL)"}},
+  {"command": "parameters.add", "params": {"name": "e_z", "expression": "229.1700543468857 mm", "comment": "elbow axis z"}},
+  {"command": "parameters.add", "params": {"name": "w_x", "expression": "232.1341350067397 mm", "comment": "wrist-flex axis x (links_v1.WF)"}},
+  {"command": "parameters.add", "params": {"name": "w_z", "expression": "234.3700543481823 mm", "comment": "wrist-flex axis z"}},
+  {"command": "parameters.add", "params": {"name": "y_front", "expression": "-14 mm", "comment": "S.BACK[1]"}},
+  {"command": "parameters.add", "params": {"name": "tube_r", "expression": "18.5 mm", "comment": "links_v1.H tube_r"}},
+  {"command": "parameters.add", "params": {"name": "hub_e_r", "expression": "20 mm", "comment": "elbow hub radius"}},
+  {"command": "parameters.add", "params": {"name": "channel_r", "expression": "9 mm", "comment": "links_v1.H channel_r"}},
+  {"command": "parameters.add", "params": {"name": "t0", "expression": "30 mm", "comment": "channel starts this far from the elbow"}},
+  {"command": "parameters.add", "params": {"name": "yc", "expression": "y_front - tube_r", "comment": "tube axis y = split plane"}},
+  {"command": "parameters.add", "params": {"name": "L", "expression": "sqrt((w_x - e_x)^2 + (w_z - e_z)^2)", "comment": "elbow to wrist-flex"}},
+  {"command": "parameters.add", "params": {"name": "ux", "expression": "(w_x - e_x) / L", "unit": ""}},
+  {"command": "parameters.add", "params": {"name": "uz", "expression": "(w_z - e_z) / L", "unit": ""}},
+  {"command": "solid.cylinder", "params": {"radius": "tube_r - 0.2 mm", "height": "L", "axis": [0.9992578885356735, 0, 0.0385184656915027], "base": ["e_x", "yc", "e_z"], "operation": "new", "name": "Tube", "body_name": "Forearm"}},
+  {"command": "solid.cylinder", "params": {"radius": "channel_r", "height": "L - 2 * t0", "axis": [0.9992578885356735, 0, 0.0385184656915027], "base": ["e_x + ux * t0", "yc", "e_z + uz * t0"], "operation": "cut", "targets": ["Forearm"], "name": "Channel"}},
+  {"command": "solid.box", "params": {"length": "1000 mm", "width": "500 mm", "height": "1000 mm", "corner": ["-500 mm", "yc - 500 mm", "-500 mm"], "operation": "cut", "targets": ["Forearm"], "name": "BackHalf"}},
+  {"command": "solid.cylinder", "params": {"radius": "hub_e_r", "height": "y_front - yc", "axis": "Y", "base": ["e_x", "yc", "e_z"], "operation": "join", "targets": ["Forearm"], "name": "HubElbow"}},
+  {"command": "solid.cylinder", "params": {"radius": "tube_r", "height": "y_front - yc", "axis": "Y", "base": ["w_x", "yc", "w_z"], "operation": "join", "targets": ["Forearm"], "name": "HubWrist"}}
+]}

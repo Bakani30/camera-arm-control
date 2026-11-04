@@ -1,0 +1,32 @@
+{"commands": [
+  {"command": "parameters.add", "params": {"name": "L", "expression": "45.2 mm", "comment": "STS3215 case length (S.STS)"}},
+  {"command": "parameters.add", "params": {"name": "W", "expression": "24.7 mm", "comment": "STS3215 case width"}},
+  {"command": "parameters.add", "params": {"name": "H", "expression": "35 mm", "comment": "STS3215 case height"}},
+  {"command": "parameters.add", "params": {"name": "sh_face", "expression": "-14 mm", "comment": "shoulder servo face y (S.SH_FACE)"}},
+  {"command": "parameters.add", "params": {"name": "back0", "expression": "-42 mm", "comment": "column back wall y (S.BACK[0])"}},
+  {"command": "parameters.add", "params": {"name": "plate_t", "expression": "2.5 mm"}},
+  {"command": "parameters.add", "params": {"name": "free_d", "expression": "3.4 mm", "comment": "M3 clearance (links_v1.H free)"}},
+  {"command": "parameters.add", "params": {"name": "soften_r", "expression": "0.4 mm", "comment": "soften(0.8) fell back to r/2 in FreeCAD"}},
+  {"command": "parameters.add", "params": {"name": "y_back", "expression": "sh_face - H", "comment": "servo bottom face"}},
+  {"command": "parameters.add", "params": {"name": "zc", "expression": "W / 2 + 6.5 mm", "comment": "leg centre |z|"}},
+  {"command": "solid.box", "params": {"length": "L + 18 mm", "width": "plate_t", "height": "W + 19 mm", "corner": ["-L/2 - 9 mm", "y_back - plate_t", "-W/2 - 9.5 mm"], "name": "Plate", "body_name": "Clamp"}},
+  {"command": "solid.box", "params": {"length": "8 mm", "width": "back0 - y_back + plate_t", "height": "6 mm", "corner": ["-4 mm", "y_back - plate_t", "zc - 3 mm"], "operation": "join", "targets": ["Clamp"], "name": "LegTop"}},
+  {"command": "solid.box", "params": {"length": "8 mm", "width": "back0 - y_back + plate_t", "height": "6 mm", "corner": ["-4 mm", "y_back - plate_t", "-zc - 3 mm"], "operation": "join", "targets": ["Clamp"], "name": "LegBottom"}},
+  {"command": "solid.cylinder", "params": {"diameter": "free_d", "height": "30 mm", "axis": "Y", "base": [0, "y_back - 5 mm", "zc"], "operation": "cut", "targets": ["Clamp"], "name": "HoleTop"}},
+  {"command": "solid.cylinder", "params": {"diameter": "free_d", "height": "30 mm", "axis": "Y", "base": [0, "y_back - 5 mm", "-zc"], "operation": "cut", "targets": ["Clamp"], "name": "HoleBottom"}},
+  {"command": "solid.fillet", "params": {"name": "SoftenOuter", "body": "Clamp", "radius": "soften_r", "edges": [
+    [4, -42, -18.85], [4, -45.5, -15.85], [4, -45.5, -21.85], [0, -42, -15.85], [-4, -45.5, -15.85], [-4, -42, -18.85],
+    [-4, -45.5, -21.85], [0, -42, -21.85], [17.8, -49, -21.85], [31.6, -50.25, -21.85], [0, -51.5, -21.85],
+    [-31.6, -50.25, -21.85], [-17.8, -49, -21.85], [-4, -42, 18.85], [-4, -45.5, 15.85], [-4, -45.5, 21.85],
+    [0, -42, 15.85], [4, -45.5, 15.85], [4, -42, 18.85], [4, -45.5, 21.85], [0, -42, 21.85], [-17.8, -49, 21.85],
+    [-31.6, -50.25, 21.85], [0, -51.5, 21.85], [31.6, -50.25, 21.85], [17.8, -49, 21.85],
+    [31.6, -49, 0], [31.6, -51.5, 0], [-31.6, -49, 0], [-31.6, -51.5, 0]]}},
+  {"command": "solid.fillet", "params": {"name": "SoftenHoles", "body": "Clamp", "radius": "soften_r", "edges": [
+    [-0.978189540842297, -42, -20.240375928368564], [-0.978189540842297, -51.5, -20.240375928368564],
+    [-0.978189540842293, -42, 17.459624071631442], [-0.978189540842292, -51.5, 17.459624071631442]]}},
+  {"command": "solid.box", "params": {"length": "1.8 mm", "width": "6 mm", "height": "4 mm", "corner": ["L/2 + 4 mm - 0.9 mm", "y_back - 4 mm", "-2 mm"], "operation": "cut", "targets": ["Clamp"], "name": "ZipSlotRight"}},
+  {"command": "solid.box", "params": {"length": "1.8 mm", "width": "6 mm", "height": "4 mm", "corner": ["-L/2 - 4 mm - 0.9 mm", "y_back - 4 mm", "-2 mm"], "operation": "cut", "targets": ["Clamp"], "name": "ZipSlotLeft"}},
+  {"command": "solid.box", "params": {"length": "L - 12 mm", "width": "6 mm", "height": "2.2 mm", "corner": ["-L/2 + 6 mm", "y_back - 4 mm", "-6 mm - 1.1 mm"], "operation": "cut", "targets": ["Clamp"], "name": "VentLow"}},
+  {"command": "solid.box", "params": {"length": "L - 12 mm", "width": "6 mm", "height": "2.2 mm", "corner": ["-L/2 + 6 mm", "y_back - 4 mm", "-1.1 mm"], "operation": "cut", "targets": ["Clamp"], "name": "VentMid"}},
+  {"command": "solid.box", "params": {"length": "L - 12 mm", "width": "6 mm", "height": "2.2 mm", "corner": ["-L/2 + 6 mm", "y_back - 4 mm", "6 mm - 1.1 mm"], "operation": "cut", "targets": ["Clamp"], "name": "VentHigh"}}
+]}
