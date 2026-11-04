@@ -1,0 +1,18 @@
+{"commands": [
+  {"command": "parameters.add", "params": {"name": "cy", "expression": "-0.176767447535766 mm", "comment": "wrist roll axis y (S.WR.y)"}},
+  {"command": "parameters.add", "params": {"name": "tip0", "expression": "368.1955233923187 mm", "comment": "x_start + finger_len - 25 (layout at jaw_open_deg 34)"}},
+  {"command": "parameters.add", "params": {"name": "inner", "expression": "251.7380429501705 mm", "comment": "finger inner face z (az - finger_inset)"}},
+  {"command": "parameters.add", "params": {"name": "top", "expression": "28.5 mm", "comment": "micro servo height to the horn base (wrist_gripper_v1.MS top)"}},
+  {"command": "parameters.add", "params": {"name": "horn_t", "expression": "2 mm", "comment": "MS horn_t"}},
+  {"command": "parameters.add", "params": {"name": "gear_t", "expression": "4 mm", "comment": "gear layer thickness (layout)"}},
+  {"command": "parameters.add", "params": {"name": "g", "expression": "0.15 mm", "comment": "pad clearance in the recess"}},
+  {"command": "parameters.add", "params": {"name": "recess", "expression": "1.5 mm", "comment": "G pad_recess"}},
+  {"command": "parameters.add", "params": {"name": "rib_h", "expression": "1.2 mm", "comment": "G rib_h"}},
+  {"command": "parameters.add", "params": {"name": "pitch", "expression": "2.4 mm"}},
+  {"command": "parameters.add", "params": {"name": "n", "expression": "10", "unit": ""}},
+  {"command": "parameters.add", "params": {"name": "y0", "expression": "cy - 8.5 mm", "comment": "py0"}},
+  {"command": "parameters.add", "params": {"name": "y1", "expression": "cy - 14 mm + top + horn_t + gear_t - 0.2 mm - 1.5 mm", "comment": "py1 = root top - 1.5"}},
+  {"command": "solid.box", "params": {"length": "24 mm - 2 * g", "width": "y1 - y0 - 2 * g", "height": "recess", "corner": ["tip0 + g", "y0 + g", "inner"], "name": "Pad", "body_name": "Pad"}},
+  {"command": "solid.box", "params": {"length": "1.2 mm", "width": "y1 - y0 - 2 * g", "height": "rib_h", "corner": ["tip0 + 0.5 mm", "y0 + g", "inner - rib_h"], "operation": "join", "targets": ["Pad"], "name": "Tooth"}},
+  {"command": "solid.pattern.rectangular", "params": {"features": ["Tooth"], "dir1": [1, 0, 0], "count1": "n", "spacing1": "pitch", "name": "Teeth"}}
+]}

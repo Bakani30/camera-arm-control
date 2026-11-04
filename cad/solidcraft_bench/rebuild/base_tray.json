@@ -1,0 +1,2570 @@
+{
+ "commands": [
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "cx",
+    "expression": "38.835300000000004 mm",
+    "comment": "pan axis x (base_v1.CX = PAN.x); CY = 0"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "r",
+    "expression": "75 mm",
+    "comment": "drum outer radius (base_v1.B r)"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "wall",
+    "expression": "3 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "tray_z",
+    "expression": "8 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "tray_t",
+    "expression": "2.5 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "pitch",
+    "expression": "10 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "hole_d",
+    "expression": "2.6 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "lid_boss_r",
+    "expression": "66 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "boss_clear_r",
+    "expression": "5.8 mm",
+    "comment": "5 + clearance + 0.5"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "m3_free",
+    "expression": "3.4 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "m3_r",
+    "expression": "55 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "sts_l",
+    "expression": "45.2 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "sts_w",
+    "expression": "24.7 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "shaft_off",
+    "expression": "11 mm"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "grow",
+    "expression": "5.3 mm",
+    "comment": "pan servo cut-out margin: clearance + 3 + 2"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "lim",
+    "expression": "r - wall - 6 mm",
+    "comment": "grid holes only inside this radius"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "far",
+    "expression": "1000 mm",
+    "comment": "where a grid hole that is off goes"
+   }
+  },
+  {
+   "command": "parameters.add",
+   "params": {
+    "name": "tie_a",
+    "expression": "288 deg",
+    "comment": "tie bar notch angle"
+   }
+  },
+  {
+   "command": "solid.cylinder",
+   "params": {
+    "radius": "r - wall - 2 mm",
+    "height": "tray_t",
+    "base": [
+     "cx",
+     0,
+     "tray_z"
+    ],
+    "operation": "new",
+    "name": "Disc",
+    "body_name": "Tray"
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": "sts_l + 2 * grow",
+    "width": "sts_w + 2 * grow",
+    "height": "tray_t + 2 mm",
+    "corner": [
+     "cx - shaft_off - sts_l / 2 - grow",
+     "-sts_w / 2 - grow",
+     "tray_z - 1 mm"
+    ],
+    "operation": "cut",
+    "targets": [
+     "Tray"
+    ],
+    "name": "ServoCutout"
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XY",
+    "offset": "tray_z - 1 mm",
+    "name": "GridSketch"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -7 * pitch + (1 - max(0, sign(lim - sqrt((-7 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -6 * pitch + (1 - max(0, sign(lim - sqrt((-6 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -5 * pitch + (1 - max(0, sign(lim - sqrt((-5 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -4 * pitch + (1 - max(0, sign(lim - sqrt((-4 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -3 * pitch + (1 - max(0, sign(lim - sqrt((-3 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -2 * pitch + (1 - max(0, sign(lim - sqrt((-2 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + -1 * pitch + (1 - max(0, sign(lim - sqrt((-1 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 0 * pitch + (1 - max(0, sign(lim - sqrt((0 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 1 * pitch + (1 - max(0, sign(lim - sqrt((1 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 2 * pitch + (1 - max(0, sign(lim - sqrt((2 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 3 * pitch + (1 - max(0, sign(lim - sqrt((3 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 4 * pitch + (1 - max(0, sign(lim - sqrt((4 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 5 * pitch + (1 - max(0, sign(lim - sqrt((5 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 6 * pitch + (1 - max(0, sign(lim - sqrt((6 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-7 * pitch)^2)))) * far",
+     "-7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-6 * pitch)^2)))) * far",
+     "-6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-5 * pitch)^2)))) * far",
+     "-5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-4 * pitch)^2)))) * far",
+     "-4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-3 * pitch)^2)))) * far",
+     "-3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-2 * pitch)^2)))) * far",
+     "-2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (-1 * pitch)^2)))) * far",
+     "-1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (0 * pitch)^2)))) * far",
+     "0 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (1 * pitch)^2)))) * far",
+     "1 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (2 * pitch)^2)))) * far",
+     "2 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (3 * pitch)^2)))) * far",
+     "3 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (4 * pitch)^2)))) * far",
+     "4 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (5 * pitch)^2)))) * far",
+     "5 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (6 * pitch)^2)))) * far",
+     "6 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.circle.center",
+   "params": {
+    "center": [
+     "cx + 7 * pitch + (1 - max(0, sign(lim - sqrt((7 * pitch)^2 + (7 * pitch)^2)))) * far",
+     "7 * pitch"
+    ],
+    "diameter": "hole_d"
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "sketch": "GridSketch",
+    "distance": "tray_t + 2 mm",
+    "operation": "cut",
+    "targets": [
+     "Tray"
+    ],
+    "name": "Grid"
+   }
+  },
+  {
+   "command": "solid.cylinder",
+   "params": {
+    "height": "tray_t + 2 mm",
+    "base": [
+     "cx + lid_boss_r",
+     0,
+     "tray_z - 1 mm"
+    ],
+    "operation": "cut",
+    "targets": [
+     "Tray"
+    ],
+    "name": "LidBossClear",
+    "radius": "boss_clear_r"
+   }
+  },
+  {
+   "command": "solid.pattern.circular",
+   "params": {
+    "features": [
+     "LidBossClear"
+    ],
+    "axis": {
+     "origin": [
+      "cx",
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ]
+    },
+    "count": 4,
+    "name": "LidBossClears"
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XY",
+    "offset": "tray_z - 1 mm",
+    "name": "TieSketch"
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "closed": true,
+    "points": [
+     [
+      "cx + (r - wall - 13 mm) * cos(tie_a) - (-12 mm) * sin(tie_a)",
+      "(r - wall - 13 mm) * sin(tie_a) + (-12 mm) * cos(tie_a)"
+     ],
+     [
+      "cx + (r + 1 mm) * cos(tie_a) - (-12 mm) * sin(tie_a)",
+      "(r + 1 mm) * sin(tie_a) + (-12 mm) * cos(tie_a)"
+     ],
+     [
+      "cx + (r + 1 mm) * cos(tie_a) - (12 mm) * sin(tie_a)",
+      "(r + 1 mm) * sin(tie_a) + (12 mm) * cos(tie_a)"
+     ],
+     [
+      "cx + (r - wall - 13 mm) * cos(tie_a) - (12 mm) * sin(tie_a)",
+      "(r - wall - 13 mm) * sin(tie_a) + (12 mm) * cos(tie_a)"
+     ]
+    ]
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "sketch": "TieSketch",
+    "distance": "tray_t + 2 mm",
+    "operation": "cut",
+    "targets": [
+     "Tray"
+    ],
+    "name": "TieNotch"
+   }
+  },
+  {
+   "command": "solid.cylinder",
+   "params": {
+    "height": "tray_t + 2 mm",
+    "base": [
+     "cx + m3_r * cos(45 deg)",
+     "m3_r * sin(45 deg)",
+     "tray_z - 1 mm"
+    ],
+    "operation": "cut",
+    "targets": [
+     "Tray"
+    ],
+    "name": "M3Hole",
+    "diameter": "m3_free"
+   }
+  },
+  {
+   "command": "solid.pattern.circular",
+   "params": {
+    "features": [
+     "M3Hole"
+    ],
+    "axis": {
+     "origin": [
+      "cx",
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ]
+    },
+    "count": 4,
+    "name": "M3Holes"
+   }
+  }
+ ]
+}

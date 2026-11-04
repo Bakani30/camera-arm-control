@@ -1,0 +1,478 @@
+{
+ "base_tray_local": {
+  "area_mm2": 28469.543170493467,
+  "bbox": {
+   "max": [
+    108.70166363636378,
+    69.86636363636366,
+    10.499999999999636
+   ],
+   "min": [
+    -31.03106363636371,
+    -69.86636363636369,
+    7.999999999997779
+   ]
+  },
+  "bbox_diag_mm": 197.6277312073102,
+  "bodies": 1,
+  "body_names": [
+   "Tray"
+  ],
+  "center_of_mass": [
+   40.147513244891506,
+   1.2375865898087626,
+   9.249999999893411
+  ],
+  "closed": true,
+  "faces": 154,
+  "seconds": 5.369522790999326,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/base_tray.json",
+  "timeline_errors": [],
+  "volume_mm3": 30335.740111225856
+ },
+ "base_tray_local@r=+2": {
+  "area_mm2": 30451.929915377386,
+  "bbox": {
+   "max": [
+    110.83520748020089,
+    71.99999824550927,
+    10.49999999999915
+   ],
+   "min": [
+    -33.1646868597075,
+    -71.99951037108292,
+    7.999999999998894
+   ]
+  },
+  "bbox_diag_mm": 203.66167546135134,
+  "bodies": 1,
+  "body_names": [
+   "Tray"
+  ],
+  "center_of_mass": [
+   40.061966835306166,
+   1.195740906714823,
+   9.249999999819815
+  ],
+  "closed": true,
+  "faces": 155,
+  "seconds": 9.650124250001682,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/base_tray.json + parameters.change r = 77 mm",
+  "timeline_errors": [],
+  "volume_mm3": 32353.26961480963
+ },
+ "forearm_core_front": {
+  "area_mm2": 18905.597794155638,
+  "bbox": {
+   "max": [
+    250.63405201503448,
+    -14.000083722419948,
+    252.8698478373526
+   ],
+   "min": [
+    77.23460953191422,
+    -32.50013804378293,
+    209.17072503577597
+   ]
+  },
+  "bbox_diag_mm": 179.77550444089312,
+  "bodies": 1,
+  "body_names": [
+   "Forearm"
+  ],
+  "center_of_mass": [
+   162.64491247901557,
+   -23.619615450660042,
+   231.6914807954174
+  ],
+  "closed": true,
+  "faces": 11,
+  "seconds": 14.994779250002466,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/forearm_core_front.json",
+  "timeline_errors": [
+   {
+    "boolean_diagnostics": {
+     "events": [
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 2e-06,
+       "strategy": "tool_nudge",
+       "tolerance_mm": 0.0,
+       "translation_mm": 0.00028857257022337743
+      }
+     ],
+     "truncated": false
+    },
+    "error": null,
+    "id": 4,
+    "ms": 2573.957375,
+    "name": "HubElbow",
+    "rolled_back": false,
+    "suppressed": false,
+    "type": "CylinderFeature",
+    "warning": "Boolean retry: tool displacement 2.885726e-4 mm, rotation 2.000000e-6 rad"
+   },
+   {
+    "boolean_diagnostics": {
+     "events": [
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 0.0,
+       "strategy": "refined_tolerance",
+       "tolerance_mm": 0.07929978134009248,
+       "translation_mm": 0.0
+      },
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 2e-06,
+       "strategy": "tool_nudge",
+       "tolerance_mm": 0.0,
+       "translation_mm": 0.00031927001952043445
+      }
+     ],
+     "truncated": false
+    },
+    "error": null,
+    "id": 5,
+    "ms": 9194.093917,
+    "name": "HubWrist",
+    "rolled_back": false,
+    "suppressed": false,
+    "type": "CylinderFeature",
+    "warning": "Boolean retry: tool displacement 3.192700e-4 mm, rotation 2.000000e-6 rad"
+   }
+  ],
+  "volume_mm3": 87053.788053952
+ },
+ "forearm_core_front@tube_r=+2": {
+  "area_mm2": 20911.303993239475,
+  "bbox": {
+   "max": [
+    252.6340239521949,
+    -13.999870425034478,
+    254.8698032914608
+   ],
+   "min": [
+    77.23396836457366,
+    -34.50014138779175,
+    208.8851192096115
+   ]
+  },
+  "bbox_diag_mm": 182.48296298502657,
+  "bodies": 1,
+  "body_names": [
+   "Forearm"
+  ],
+  "center_of_mass": [
+   165.29821917637585,
+   -24.739663404146718,
+   231.79366482211017
+  ],
+  "closed": true,
+  "faces": 12,
+  "seconds": 38.54983029100549,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/forearm_core_front.json + parameters.change tube_r = 20.5 mm",
+  "timeline_errors": [
+   {
+    "boolean_diagnostics": {
+     "events": [
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 2e-06,
+       "strategy": "tool_nudge",
+       "tolerance_mm": 0.0,
+       "translation_mm": 0.000291670505374163
+      }
+     ],
+     "truncated": false
+    },
+    "error": null,
+    "id": 4,
+    "ms": 5101.840334,
+    "name": "HubElbow",
+    "rolled_back": false,
+    "suppressed": false,
+    "type": "CylinderFeature",
+    "warning": "Boolean retry: tool displacement 2.916705e-4 mm, rotation 2.000000e-6 rad"
+   },
+   {
+    "boolean_diagnostics": {
+     "events": [
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 0.0,
+       "strategy": "refined_tolerance",
+       "tolerance_mm": 0.08004864730469957,
+       "translation_mm": 0.0
+      },
+      {
+       "face_shift_mm": 0.0,
+       "rotation_rad": 2e-06,
+       "strategy": "tool_nudge",
+       "tolerance_mm": 0.0,
+       "translation_mm": 0.00032228503982815646
+      }
+     ],
+     "truncated": false
+    },
+    "error": null,
+    "id": 5,
+    "ms": 13835.503750000002,
+    "name": "HubWrist",
+    "rolled_back": false,
+    "suppressed": false,
+    "type": "CylinderFeature",
+    "warning": "Boolean retry: tool displacement 3.222850e-4 mm, rotation 2.000000e-6 rad"
+   }
+  ],
+  "volume_mm3": 108448.15804078498
+ },
+ "gripper_gear_crank_up_local": {
+  "area_mm2": 1693.0522938001677,
+  "bbox": {
+   "max": [
+    340.1953669722966,
+    23.323232552464248,
+    267.73796473744915
+   ],
+   "min": [
+    295.040233122102,
+    16.323232552464223,
+    233.41375070649963
+   ]
+  },
+  "bbox_diag_mm": 57.1501336995061,
+  "bodies": 1,
+  "body_names": [
+   "GearCrank"
+  ],
+  "center_of_mass": [
+   313.587138496457,
+   20.745102550977997,
+   248.49447590491846
+  ],
+  "closed": true,
+  "faces": 276,
+  "seconds": 0.6003694589962834,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/gripper_gear_crank_up.json",
+  "timeline_errors": [],
+  "volume_mm3": 1644.3474997207206
+ },
+ "gripper_gear_crank_up_local@link=+2": {
+  "area_mm2": 1737.0522938011388,
+  "bbox": {
+   "max": [
+    341.85344211740664,
+    23.323232552464233,
+    268.85635054439047
+   ],
+   "min": [
+    295.040233122102,
+    16.32323255246422,
+    233.41375070649963
+   ]
+  },
+  "bbox_diag_mm": 59.132515756620165,
+  "bodies": 1,
+  "body_names": [
+   "GearCrank"
+  ],
+  "center_of_mass": [
+   314.3006232003164,
+   20.77568151900657,
+   248.97555777187495
+  ],
+  "closed": true,
+  "faces": 275,
+  "seconds": 1.0171913329977542,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/gripper_gear_crank_up.json + parameters.change link = 42 mm",
+  "timeline_errors": [],
+  "volume_mm3": 1692.3474996939215
+ },
+ "gripper_pad_up_local": {
+  "area_mm2": 2108.699999999991,
+  "bbox": {
+   "max": [
+    392.04552339231867,
+    18.47323255246424,
+    253.2380429501705
+   ],
+   "min": [
+    368.3455233923187,
+    -8.526767447535766,
+    250.5380429501705
+   ]
+  },
+  "bbox_diag_mm": 36.02748950454361,
+  "bodies": 1,
+  "body_names": [
+   "Pad"
+  ],
+  "center_of_mass": [
+   380.16669456348984,
+   4.973232552464235,
+   252.0988537609813
+  ],
+  "closed": true,
+  "faces": 46,
+  "seconds": 0.17436533400177723,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/gripper_pad_up.json",
+  "timeline_errors": [],
+  "volume_mm3": 1348.649999999992
+ },
+ "gripper_pad_up_local@top=+2": {
+  "area_mm2": 2257.499999999994,
+  "bbox": {
+   "max": [
+    392.04552339231867,
+    20.473232552464232,
+    253.2380429501705
+   ],
+   "min": [
+    368.3455233923187,
+    -8.526767447535766,
+    250.5380429501705
+   ]
+  },
+  "bbox_diag_mm": 37.549700398272144,
+  "bodies": 1,
+  "body_names": [
+   "Pad"
+  ],
+  "center_of_mass": [
+   380.1666945634899,
+   5.973232552464233,
+   252.09885376098134
+  ],
+  "closed": true,
+  "faces": 46,
+  "seconds": 0.17631916599930264,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/gripper_pad_up.json + parameters.change top = 30.5 mm",
+  "timeline_errors": [],
+  "volume_mm3": 1448.5499999999922
+ },
+ "servo_clamp_shoulder_local": {
+  "area_mm2": 6639.93670480052,
+  "bbox": {
+   "max": [
+    31.60000000000001,
+    -41.99999999999999,
+    21.850000000000005
+   ],
+   "min": [
+    -31.60000000000001,
+    -51.50000000000001,
+    -21.85000000000001
+   ]
+  },
+  "bbox_diag_mm": 77.42208987104394,
+  "bodies": 1,
+  "body_names": [
+   "Clamp"
+  ],
+  "center_of_mass": [
+   1.2381911882111116e-14,
+   -49.873656439963725,
+   1.453968186033933e-14
+  ],
+  "closed": true,
+  "faces": 86,
+  "seconds": 2.9938156249991152,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/servo_clamp_shoulder.json",
+  "timeline_errors": [],
+  "volume_mm3": 6800.569406474148
+ },
+ "servo_clamp_shoulder_local@L=+2": {
+  "area_mm2": 6826.962745413476,
+  "bbox": {
+   "max": [
+    32.60000000000001,
+    -41.999999999999986,
+    21.850000000000023
+   ],
+   "min": [
+    -32.60000000000001,
+    -51.50000000000001,
+    -21.85000000000001
+   ]
+  },
+  "bbox_diag_mm": 79.06313932547837,
+  "bodies": 1,
+  "body_names": [
+   "Clamp"
+  ],
+  "center_of_mass": [
+   -3.2764992756032538e-15,
+   -49.88363500454385,
+   8.863019684249105e-15
+  ],
+  "closed": true,
+  "faces": 86,
+  "seconds": 5.384570291993441,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/servo_clamp_shoulder.json + parameters.change L = 47.2 mm",
+  "timeline_errors": [],
+  "volume_mm3": 6985.794309508733
+ },
+ "turntable": {
+  "area_mm2": 33388.196436373706,
+  "bbox": {
+   "max": [
+    108.83528722471569,
+    69.9999982942452,
+    70.00000000000006
+   ],
+   "min": [
+    -31.16468722471567,
+    -69.99999829424519,
+    62.39999999999999
+   ]
+  },
+  "bbox_diag_mm": 198.13569060272496,
+  "bodies": 1,
+  "body_names": [
+   "Turntable"
+  ],
+  "center_of_mass": [
+   38.42835919018309,
+   -0.16596830169992033,
+   66.95395848218004
+  ],
+  "closed": true,
+  "faces": 19,
+  "seconds": 7.861514625001291,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/turntable.json",
+  "timeline_errors": [],
+  "volume_mm3": 91983.93412703938
+ },
+ "turntable@tt_r=+5": {
+  "area_mm2": 38111.7407495115,
+  "bbox": {
+   "max": [
+    113.83528631219534,
+    74.99999817240557,
+    70.00000000000004
+   ],
+   "min": [
+    -36.16468631219537,
+    -74.99999817240555,
+    62.39999999999999
+   ]
+  },
+  "bbox_diag_mm": 212.26811039522943,
+  "bodies": 1,
+  "body_names": [
+   "Turntable"
+  ],
+  "center_of_mass": [
+   38.48097283404713,
+   -0.1445106300757458,
+   66.95991109349379
+  ],
+  "closed": true,
+  "faces": 19,
+  "seconds": 13.92123891600204,
+  "source": "solidcraft-cli 0.30.1 eval rebuild/turntable.json + parameters.change tt_r = 75 mm",
+  "timeline_errors": [],
+  "volume_mm3": 105642.17607304778
+ }
+}

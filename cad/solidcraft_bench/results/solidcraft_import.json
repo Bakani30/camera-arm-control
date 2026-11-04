@@ -1,0 +1,1322 @@
+{
+ "base_drum": {
+  "area_mm2": 115951.82393197625,
+  "bbox": {
+   "max": [
+    122.03999519037838,
+    93.687752587289,
+    53.0
+   ],
+   "min": [
+    -56.1647,
+    -93.68775258729026,
+    -1.4210854715202004e-14
+   ]
+  },
+  "bbox_diag_mm": 263.9611587475029,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 1"
+  ],
+  "center_of_mass": [
+   36.07623864745618,
+   -0.18826790130376184,
+   16.99015217033207
+  ],
+  "closed": true,
+  "faces": 193,
+  "seconds": 0.844793332995323,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_drum.step",
+  "volume_mm3": 207436.93143448
+ },
+ "base_lazy_susan": {
+  "area_mm2": 18720.660165522364,
+  "bbox": {
+   "max": [
+    88.8353,
+    50.0,
+    64.0
+   ],
+   "min": [
+    -11.1647,
+    -50.0,
+    56.0
+   ]
+  },
+  "bbox_diag_mm": 141.6474496770062,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 9"
+  ],
+  "center_of_mass": [
+   38.835300605894645,
+   2.365749591243964e-15,
+   60.0
+  ],
+  "closed": true,
+  "faces": 7,
+  "seconds": 0.02750079199904576,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_lazy_susan.step",
+  "volume_mm3": 55849.53467710937
+ },
+ "base_leg_1": {
+  "area_mm2": 4666.897349700008,
+  "bbox": {
+   "max": [
+    -33.96469999999999,
+    9.91600695049756,
+    13.89504562174017
+   ],
+   "min": [
+    -135.175845618,
+    -9.91600695049754,
+    -1.4210854715202004e-14
+   ]
+  },
+  "bbox_diag_mm": 104.06765619301468,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 4"
+  ],
+  "center_of_mass": [
+   -71.78816814415194,
+   2.9660950777425034e-08,
+   5.318048556356565
+  ],
+  "closed": true,
+  "faces": 58,
+  "seconds": 0.4022446669987403,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_leg_1.step",
+  "volume_mm3": 13154.194690545315
+ },
+ "base_leg_2": {
+  "area_mm2": 4666.896980226778,
+  "bbox": {
+   "max": [
+    23.739228960026523,
+    -66.97290924040766,
+    13.895045621740067
+   ],
+   "min": [
+    -16.062158972952325,
+    -165.53355215193443,
+    -1.4210854715202004e-14
+   ]
+  },
+  "bbox_diag_mm": 107.19805551107355,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 5"
+  ],
+  "center_of_mass": [
+   4.650768173273416,
+   -105.20917081378114,
+   5.318048455747507
+  ],
+  "closed": true,
+  "faces": 58,
+  "seconds": 0.5667919580009766,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_leg_2.step",
+  "volume_mm3": 13154.19458888138
+ },
+ "base_leg_3": {
+  "area_mm2": 4666.897551160496,
+  "bbox": {
+   "max": [
+    179.76605478239222,
+    -36.636073294433054,
+    13.89504562174011
+   ],
+   "min": [
+    93.34689866811794,
+    -102.61087039016303,
+    -1.4210854715202004e-14
+   ]
+  },
+  "bbox_diag_mm": 109.60846996540134,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 6"
+  ],
+  "center_of_mass": [
+   128.3315666065813,
+   -65.02284364082341,
+   5.318048237090891
+  ],
+  "closed": true,
+  "faces": 58,
+  "seconds": 0.39845149999746354,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_leg_3.step",
+  "volume_mm3": 13154.19446642769
+ },
+ "base_leg_4": {
+  "area_mm2": 4666.897530781896,
+  "bbox": {
+   "max": [
+    179.7660547823921,
+    102.61080314012713,
+    13.895045621739996
+   ],
+   "min": [
+    93.34689866778038,
+    36.636073907870426,
+    -1.4210854715202004e-14
+   ]
+  },
+  "bbox_diag_mm": 109.60842911775288,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 7"
+  ],
+  "center_of_mass": [
+   128.33156608956668,
+   65.0228433522951,
+   5.3180481506921335
+  ],
+  "closed": true,
+  "faces": 58,
+  "seconds": 0.4426803340029437,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_leg_4.step",
+  "volume_mm3": 13154.19447538024
+ },
+ "base_leg_5": {
+  "area_mm2": 4666.896357077654,
+  "bbox": {
+   "max": [
+    23.73910192371465,
+    165.5334972836713,
+    13.895045621740138
+   ],
+   "min": [
+    -16.062184221909796,
+    66.97290923761878,
+    -2.842170943040401e-14
+   ]
+  },
+  "bbox_diag_mm": 107.19796727391703,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 8"
+  ],
+  "center_of_mass": [
+   4.650767686121039,
+   105.20917096585482,
+   5.318048603199608
+  ],
+  "closed": true,
+  "faces": 58,
+  "seconds": 0.30778066699713236,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_leg_5.step",
+  "volume_mm3": 13154.194188475172
+ },
+ "base_lid": {
+  "area_mm2": 35281.50324810633,
+  "bbox": {
+   "max": [
+    113.83530000000002,
+    75.00000000000003,
+    56.00000000000029
+   ],
+   "min": [
+    -36.164700000000025,
+    -75.00000000000003,
+    53.0
+   ]
+  },
+  "bbox_diag_mm": 212.15324649884582,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 2"
+  ],
+  "center_of_mass": null,
+  "closed": false,
+  "faces": 50,
+  "seconds": 1.765660500001104,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_lid.step",
+  "volume_mm3": 0
+ },
+ "base_tray": {
+  "area_mm2": 28469.569249780056,
+  "bbox": {
+   "max": [
+    108.70166363636363,
+    69.86636363636404,
+    10.500000000000002
+   ],
+   "min": [
+    -31.03106363636367,
+    -69.86636363636366,
+    8.0
+   ]
+  },
+  "bbox_diag_mm": 197.6277312073103,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 3"
+  ],
+  "center_of_mass": [
+   40.147513835922496,
+   1.2375777186155208,
+   9.25
+  ],
+  "closed": true,
+  "faces": 153,
+  "seconds": 1.0097621249951771,
+  "source": "solidcraft-cli 0.30.1 eval out/step/base_tray.step",
+  "volume_mm3": 30335.723703764248
+ },
+ "bearing_elbow": {
+  "area_mm2": 2940.3539752766537,
+  "bbox": {
+   "max": [
+    118.23413500940302,
+    0.5,
+    250.17005434688
+   ],
+   "min": [
+    76.23413500940299,
+    -6.5,
+    208.17005434688
+   ]
+  },
+  "bbox_diag_mm": 59.80802621722274,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 18"
+  ],
+  "center_of_mass": [
+   97.234135009403,
+   -3.0000000000000004,
+   229.17005331718747
+  ],
+  "closed": true,
+  "faces": 4,
+  "seconds": 0.030266499998106156,
+  "source": "solidcraft-cli 0.30.1 eval out/step/bearing_elbow.step",
+  "volume_mm3": 4749.669274655177
+ },
+ "bearing_shoulder": {
+  "area_mm2": 2940.353975276653,
+  "bbox": {
+   "max": [
+    90.23454850205802,
+    0.5,
+    137.59995149802
+   ],
+   "min": [
+    48.234548502058004,
+    -6.5,
+    95.59995149802
+   ]
+  },
+  "bbox_diag_mm": 59.808026217222725,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 17"
+  ],
+  "center_of_mass": [
+   69.234548502058,
+   -2.9999999999999996,
+   116.59995046832745
+  ],
+  "closed": true,
+  "faces": 4,
+  "seconds": 0.026618292002240196,
+  "source": "solidcraft-cli 0.30.1 eval out/step/bearing_shoulder.step",
+  "volume_mm3": 4749.6692746552
+ },
+ "column": {
+  "area_mm2": 53667.44794244874,
+  "bbox": {
+   "max": [
+    108.83529999999999,
+    70.0,
+    143.59995149802
+   ],
+   "min": [
+    -31.164699999999996,
+    -70.0,
+    62.39999999999999
+   ]
+  },
+  "bbox_diag_mm": 213.9940002039328,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 14"
+  ],
+  "center_of_mass": null,
+  "closed": false,
+  "faces": 72,
+  "seconds": 2.1603735000026063,
+  "source": "solidcraft-cli 0.30.1 eval out/step/column.step",
+  "volume_mm3": 0
+ },
+ "forearm_back": {
+  "area_mm2": 25549.477866517766,
+  "bbox": {
+   "max": [
+    250.63412331368028,
+    -32.49999999999997,
+    252.87005434818002
+   ],
+   "min": [
+    77.23420757716747,
+    -52.300000000000004,
+    209.17013470501774
+   ]
+  },
+  "bbox_diag_mm": 179.91457349044458,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 20"
+  ],
+  "center_of_mass": [
+   161.57440805786175,
+   -42.95829788499033,
+   231.6501836918325
+  ],
+  "closed": true,
+  "faces": 142,
+  "seconds": 0.9694488329987507,
+  "source": "solidcraft-cli 0.30.1 eval out/step/forearm_back.step",
+  "volume_mm3": 51113.71328131214
+ },
+ "forearm_front": {
+  "area_mm2": 26299.451825253003,
+  "bbox": {
+   "max": [
+    259.1331326432456,
+    0.5,
+    261.37005434818
+   ],
+   "min": [
+    70.2342151072424,
+    -32.50000000000003,
+    202.17006007543947
+   ]
+  },
+  "bbox_diag_mm": 200.68991097752334,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 19"
+  ],
+  "center_of_mass": [
+   157.23138209218854,
+   -20.94863199181457,
+   231.49364796005986
+  ],
+  "closed": true,
+  "faces": 113,
+  "seconds": 0.4239372500014724,
+  "source": "solidcraft-cli 0.30.1 eval out/step/forearm_front.step",
+  "volume_mm3": 59719.40937437851
+ },
+ "gripper_backcrank_dn": {
+  "area_mm2": 1191.2265237073002,
+  "bbox": {
+   "max": [
+    340.6955161514795,
+    -22.37676744753,
+    231.87032681134
+   ],
+   "min": [
+    298.53402773094064,
+    -25.87676744753,
+    200.50261980005385
+   ]
+  },
+  "bbox_diag_mm": 52.66663221605426,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 39"
+  ],
+  "center_of_mass": [
+   319.6147779010934,
+   -24.126767447530113,
+   216.1864651786159
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.09782891599752475,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_backcrank_dn.step",
+  "volume_mm3": 1292.5160226832181
+ },
+ "gripper_backcrank_up": {
+  "area_mm2": 1191.2265237073025,
+  "bbox": {
+   "max": [
+    340.69551615147947,
+    -22.37676744753,
+    268.23804295017004
+   ],
+   "min": [
+    298.5340277309406,
+    -25.87676744753,
+    236.8703359388838
+   ]
+  },
+  "bbox_diag_mm": 52.66663221605431,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 33"
+  ],
+  "center_of_mass": [
+   319.61476598132873,
+   -24.126767447529886,
+   252.55418131744491
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.09469525000167778,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_backcrank_up.step",
+  "volume_mm3": 1292.5160226839328
+ },
+ "gripper_backfollower_dn": {
+  "area_mm2": 1191.2265237073016,
+  "bbox": {
+   "max": [
+    335.6955161514795,
+    -22.37676744753,
+    218.87032681134008
+   ],
+   "min": [
+    293.5340277309405,
+    -25.87676744753,
+    187.50261980005388
+   ]
+  },
+  "bbox_diag_mm": 52.66663221605439,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 40"
+  ],
+  "center_of_mass": [
+   314.6147779010933,
+   -24.12676744753011,
+   203.1864651786159
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.08805683299578959,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_backfollower_dn.step",
+  "volume_mm3": 1292.5160226832252
+ },
+ "gripper_backfollower_up": {
+  "area_mm2": 1191.2265237073022,
+  "bbox": {
+   "max": [
+    335.69551615147947,
+    -22.37676744753,
+    281.23804295017004
+   ],
+   "min": [
+    293.5340277309405,
+    -25.87676744753,
+    249.8703359388838
+   ]
+  },
+  "bbox_diag_mm": 52.66663221605436,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 34"
+  ],
+  "center_of_mass": [
+   314.6147659813287,
+   -24.126767447529886,
+   265.5541813174449
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.10007120799855329,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_backfollower_up.step",
+  "volume_mm3": 1292.5160226839357
+ },
+ "gripper_cover": {
+  "area_mm2": 2391.9192844884146,
+  "bbox": {
+   "max": [
+    322.03402049011,
+    26.32323255246402,
+    259.3703199055259
+   ],
+   "min": [
+    293.0340204901099,
+    23.823232552463963,
+    209.37033371715398
+   ]
+  },
+  "bbox_diag_mm": 57.85541131853947,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 43"
+  ],
+  "center_of_mass": null,
+  "closed": false,
+  "faces": 47,
+  "seconds": 2.9433265420011594,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_cover.step",
+  "volume_mm3": 0
+ },
+ "gripper_finger_dn": {
+  "area_mm2": 7417.855947620349,
+  "bbox": {
+   "max": [
+    393.19552339231,
+    20.123232552464003,
+    217.00261067251
+   ],
+   "min": [
+    326.1955258009367,
+    -22.176767447530008,
+    187.0026130811367
+   ]
+  },
+  "bbox_diag_mm": 84.72478700313106,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 41"
+  ],
+  "center_of_mass": [
+   359.36666277948854,
+   1.6548307008155376,
+   210.4683916421465
+  ],
+  "closed": true,
+  "faces": 38,
+  "seconds": 0.12005704199691536,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_finger_dn.step",
+  "volume_mm3": 16221.192158792264
+ },
+ "gripper_finger_up": {
+  "area_mm2": 7417.856028232094,
+  "bbox": {
+   "max": [
+    393.19552339231,
+    20.123232552464003,
+    281.7380405415432
+   ],
+   "min": [
+    326.19552580093665,
+    -22.176767447530008,
+    251.73804295017
+   ]
+  },
+  "bbox_diag_mm": 84.72478700313107,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 35"
+  ],
+  "center_of_mass": [
+   359.3666640765795,
+   1.6548308545944714,
+   258.2722610392072
+  ],
+  "closed": true,
+  "faces": 38,
+  "seconds": 0.11732987499999581,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_finger_up.step",
+  "volume_mm3": 16221.191440347293
+ },
+ "gripper_follower_dn": {
+  "area_mm2": 1126.562722681206,
+  "bbox": {
+   "max": [
+    335.6955161514795,
+    23.323232552464,
+    218.87032681134008
+   ],
+   "min": [
+    293.5340277309405,
+    20.323232552464,
+    187.50261980005388
+   ]
+  },
+  "bbox_diag_mm": 52.63576872223999,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 38"
+  ],
+  "center_of_mass": [
+   314.6147789847081,
+   21.8232325524639,
+   203.18646453074172
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.07717520900041563,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_follower_dn.step",
+  "volume_mm3": 1107.8708853188455
+ },
+ "gripper_follower_up": {
+  "area_mm2": 1126.5627226812041,
+  "bbox": {
+   "max": [
+    335.69551615147947,
+    23.323232552464,
+    281.23804295017004
+   ],
+   "min": [
+    293.5340277309405,
+    20.323232552464,
+    249.8703359388838
+   ]
+  },
+  "bbox_diag_mm": 52.63576872223996,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 32"
+  ],
+  "center_of_mass": [
+   314.61476489771394,
+   21.823232552464095,
+   265.55418066957066
+  ],
+  "closed": true,
+  "faces": 8,
+  "seconds": 0.07193550000374671,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_follower_up.step",
+  "volume_mm3": 1107.8708853194566
+ },
+ "gripper_gear_crank_dn": {
+  "area_mm2": 1632.0696081274198,
+  "bbox": {
+   "max": [
+    340.19552339231,
+    23.323232552464003,
+    235.36411417935113
+   ],
+   "min": [
+    295.0774443852666,
+    16.323232552463992,
+    201.00261095112165
+   ]
+  },
+  "bbox_diag_mm": 57.14327569705327,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 37"
+  ],
+  "center_of_mass": [
+   312.846452932792,
+   20.678102137825913,
+   220.75175610040915
+  ],
+  "closed": true,
+  "faces": 254,
+  "seconds": 0.12101745799736818,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_gear_crank_dn.step",
+  "volume_mm3": 1769.9827556765406
+ },
+ "gripper_gear_crank_up": {
+  "area_mm2": 1693.055050455864,
+  "bbox": {
+   "max": [
+    340.19552339231006,
+    23.323232552464006,
+    267.7380426715583
+   ],
+   "min": [
+    295.0402331221,
+    16.323232552463992,
+    233.41375070649943
+   ]
+  },
+  "bbox_diag_mm": 57.15030409621222,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 31"
+  ],
+  "center_of_mass": [
+   313.5871535572189,
+   20.745106104314566,
+   248.49448651067158
+  ],
+  "closed": true,
+  "faces": 257,
+  "seconds": 0.16648429199995007,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_gear_crank_up.step",
+  "volume_mm3": 1644.3377535914506
+ },
+ "gripper_pad_dn": {
+  "area_mm2": 1896.2860247099295,
+  "bbox": {
+   "max": [
+    392.69552339231,
+    18.473232552464015,
+    218.20261067251
+   ],
+   "min": [
+    368.34552339231,
+    -8.526767447536011,
+    215.50261067251
+   ]
+  },
+  "bbox_diag_mm": 36.458366666651465,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 42"
+  ],
+  "center_of_mass": [
+   380.4549828517694,
+   4.973232552463999,
+   216.5841422040415
+  ],
+  "closed": true,
+  "faces": 27,
+  "seconds": 0.013282749998325016,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_pad_dn.step",
+  "volume_mm3": 1348.649999999993
+ },
+ "gripper_pad_up": {
+  "area_mm2": 2108.7000000000094,
+  "bbox": {
+   "max": [
+    392.04552339231,
+    18.473232552464,
+    253.23804295017
+   ],
+   "min": [
+    368.34552339231,
+    -8.526767447536,
+    250.53804295017
+   ]
+  },
+  "bbox_diag_mm": 36.0274895045436,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 36"
+  ],
+  "center_of_mass": [
+   380.16669456348114,
+   4.973232552463999,
+   252.0988537609808
+  ],
+  "closed": true,
+  "faces": 46,
+  "seconds": 0.014143084001261741,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_pad_up.step",
+  "volume_mm3": 1348.6500000000044
+ },
+ "gripper_palm": {
+  "area_mm2": 9101.753261523203,
+  "bbox": {
+   "max": [
+    325.03402049011004,
+    23.823232552464,
+    259.3703268113401
+   ],
+   "min": [
+    293.23402049010997,
+    -22.37676744753,
+    209.3703268113399
+   ]
+  },
+  "bbox_diag_mm": 75.13774018427402,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 28"
+  ],
+  "center_of_mass": [
+   310.3840019759093,
+   -7.91613648643771,
+   234.5207296628734
+  ],
+  "closed": true,
+  "faces": 65,
+  "seconds": 0.7175103330009733,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_palm.step",
+  "volume_mm3": 24493.20504509851
+ },
+ "gripper_pins": {
+  "area_mm2": 1920.9065130092592,
+  "bbox": {
+   "max": [
+    337.64552339231,
+    26.323232552464,
+    278.18804295017
+   ],
+   "min": [
+    296.58402049010994,
+    -25.87676744753,
+    190.55261067251
+   ]
+  },
+  "bbox_diag_mm": 109.95842855861065,
+  "bodies": 13,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 44",
+   "Open CASCADE STEP translator 7.8 44 (2)",
+   "Open CASCADE STEP translator 7.8 44 (3)",
+   "Open CASCADE STEP translator 7.8 44 (4)",
+   "Open CASCADE STEP translator 7.8 44 (5)",
+   "Open CASCADE STEP translator 7.8 44 (6)",
+   "Open CASCADE STEP translator 7.8 44 (7)",
+   "Open CASCADE STEP translator 7.8 44 (8)",
+   "Open CASCADE STEP translator 7.8 44 (9)",
+   "Open CASCADE STEP translator 7.8 44 (10)",
+   "Open CASCADE STEP translator 7.8 44 (11)",
+   "Open CASCADE STEP translator 7.8 44 (12)",
+   "Open CASCADE STEP translator 7.8 44 (13)"
+  ],
+  "center_of_mass": [
+   309.19435141208606,
+   -1.582913344072552,
+   234.00574378375234
+  ],
+  "closed": true,
+  "faces": 39,
+  "seconds": 0.257577249998576,
+  "source": "solidcraft-cli 0.30.1 eval out/step/gripper_pins.step",
+  "volume_mm3": 1268.0703100757273
+ },
+ "horn_elbow": {
+  "area_mm2": 1030.4175264301093,
+  "bbox": {
+   "max": [
+    108.23413500940302,
+    -7.0,
+    240.17005434688
+   ],
+   "min": [
+    86.23413500940299,
+    -14.000000000000002,
+    218.17005434688
+   ]
+  },
+  "bbox_diag_mm": 31.890437438203968,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 22"
+  ],
+  "center_of_mass": [
+   97.234135009403,
+   -8.725499031888361,
+   229.17005434687997
+  ],
+  "closed": true,
+  "faces": 5,
+  "seconds": 0.04850129199621733,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_elbow.step",
+  "volume_mm3": 1218.902267966527
+ },
+ "horn_gripper": {
+  "area_mm2": 502.6116789357295,
+  "bbox": {
+   "max": [
+    311.03402049011,
+    16.323232552464,
+    249.37032681134
+   ],
+   "min": [
+    295.0340204901099,
+    14.323232552464,
+    233.37032681133996
+   ]
+  },
+  "bbox_diag_mm": 22.715633383201155,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 30"
+  ],
+  "center_of_mass": [
+   303.03402049011,
+   15.323232552463999,
+   241.37032644974744
+  ],
+  "closed": true,
+  "faces": 3,
+  "seconds": 0.01806258400029037,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_gripper.step",
+  "volume_mm3": 402.0889127640456
+ },
+ "horn_pan": {
+  "area_mm2": 1042.9458750977017,
+  "bbox": {
+   "max": [
+    49.8353,
+    11.0,
+    62.4
+   ],
+   "min": [
+    27.835299999999997,
+    -11.0,
+    55.4
+   ]
+  },
+  "bbox_diag_mm": 31.89043743820395,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 11"
+  ],
+  "center_of_mass": [
+   38.835299547671916,
+   5.731585563804655e-16,
+   60.58421714928464
+  ],
+  "closed": true,
+  "faces": 5,
+  "seconds": 0.03817979199811816,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_pan.step",
+  "volume_mm3": 1253.3932630998754
+ },
+ "horn_shoulder": {
+  "area_mm2": 1030.417526430108,
+  "bbox": {
+   "max": [
+    80.234548502058,
+    -7.0,
+    127.59995149802
+   ],
+   "min": [
+    58.234548502058004,
+    -14.000000000000002,
+    105.59995149802
+   ]
+  },
+  "bbox_diag_mm": 31.89043743820395,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 13"
+  ],
+  "center_of_mass": [
+   69.234548502058,
+   -8.72549903188837,
+   116.59995149801999
+  ],
+  "closed": true,
+  "faces": 5,
+  "seconds": 0.052101417000812944,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_shoulder.step",
+  "volume_mm3": 1218.9022679665347
+ },
+ "horn_wrist_flex": {
+  "area_mm2": 1030.4175264301086,
+  "bbox": {
+   "max": [
+    243.13413500674,
+    -7.0,
+    245.37005434818
+   ],
+   "min": [
+    221.13413500674,
+    -14.000000000000002,
+    223.37005434817996
+   ]
+  },
+  "bbox_diag_mm": 31.890437438203968,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 24"
+  ],
+  "center_of_mass": [
+   232.13413500674002,
+   -8.725499031888349,
+   234.37005434818002
+  ],
+  "closed": true,
+  "faces": 5,
+  "seconds": 0.24676962499506772,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_wrist_flex.step",
+  "volume_mm3": 1218.9022679665159
+ },
+ "horn_wrist_roll": {
+  "area_mm2": 502.6116789357299,
+  "bbox": {
+   "max": [
+    293.23402049011,
+    7.823232552464,
+    242.37032681134
+   ],
+   "min": [
+    291.23402049011,
+    -8.176767447536008,
+    226.37032681134
+   ]
+  },
+  "bbox_diag_mm": 22.715633383201098,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 27"
+  ],
+  "center_of_mass": [
+   292.23402049011,
+   -0.17676744753600424,
+   234.37032644974744
+  ],
+  "closed": true,
+  "faces": 3,
+  "seconds": 0.04373429200495593,
+  "source": "solidcraft-cli 0.30.1 eval out/step/horn_wrist_roll.step",
+  "volume_mm3": 402.0889127640464
+ },
+ "servo_clamp_shoulder": {
+  "area_mm2": 6633.376266714696,
+  "bbox": {
+   "max": [
+    98.33523076382546,
+    -41.99999999999997,
+    146.04863755730335
+   ],
+   "min": [
+    21.819498467488568,
+    -51.50000000000001,
+    74.96176450217958
+   ]
+  },
+  "bbox_diag_mm": 104.87254554744047,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 15"
+  ],
+  "center_of_mass": [
+   60.07736378193696,
+   -49.87345137661732,
+   110.50520111655376
+  ],
+  "closed": true,
+  "faces": 100,
+  "seconds": 0.6485794590043952,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_clamp_shoulder.step",
+  "volume_mm3": 6801.935753567696
+ },
+ "servo_elbow": {
+  "area_mm2": 7125.880000000444,
+  "bbox": {
+   "max": [
+    131.2849031154902,
+    -14.0,
+    242.8051097175349
+   ],
+   "min": [
+    85.167040451099,
+    -49.0,
+    216.38240522144
+   ]
+  },
+  "bbox_diag_mm": 63.6397404898826,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 21"
+  ],
+  "center_of_mass": [
+   108.22597178329305,
+   -31.500000000000004,
+   229.59375746948743
+  ],
+  "closed": true,
+  "faces": 6,
+  "seconds": 0.012904000002890825,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_elbow.step",
+  "volume_mm3": 39075.40000000753
+ },
+ "servo_gripper": {
+  "area_mm2": 2537.7638304722814,
+  "bbox": {
+   "max": [
+    309.13402049011,
+    14.323232552464,
+    251.72032681134
+   ],
+   "min": [
+    296.93402049011,
+    -14.17676744753,
+    219.22032681134
+   ]
+  },
+  "bbox_diag_mm": 44.914808248501494,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 29"
+  ],
+  "center_of_mass": [
+   303.03402049011,
+   -2.3477905235574945,
+   235.56880053399874
+  ],
+  "closed": true,
+  "faces": 16,
+  "seconds": 0.0611224169988418,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_gripper.step",
+  "volume_mm3": 6822.529160055695
+ },
+ "servo_pan": {
+  "area_mm2": 7125.879999999999,
+  "bbox": {
+   "max": [
+    50.4353,
+    12.35,
+    55.4
+   ],
+   "min": [
+    5.2353,
+    -12.35,
+    20.4
+   ]
+  },
+  "bbox_diag_mm": 62.27463368017511,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 10"
+  ],
+  "center_of_mass": [
+   27.835299999999997,
+   0.0,
+   37.9
+  ],
+  "closed": true,
+  "faces": 6,
+  "seconds": 0.012956791004398838,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_pan.step",
+  "volume_mm3": 39075.399999999994
+ },
+ "servo_shoulder": {
+  "area_mm2": 7125.879999999441,
+  "bbox": {
+   "max": [
+    85.733957717108,
+    -14.0,
+    133.30816299158
+   ],
+   "min": [
+    34.42077151419991,
+    -49.0,
+    87.70223906789853
+   ]
+  },
+  "bbox_diag_mm": 77.05805198178149,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 12"
+  ],
+  "center_of_mass": [
+   60.077364615654155,
+   -31.5,
+   110.505201029742
+  ],
+  "closed": true,
+  "faces": 6,
+  "seconds": 0.01134295800147811,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_shoulder.step",
+  "volume_mm3": 39075.39999999513
+ },
+ "servo_wrist_flex": {
+  "area_mm2": 7125.879999999498,
+  "bbox": {
+   "max": [
+    244.20122956504,
+    -14.0,
+    247.15770347361
+   ],
+   "min": [
+    198.08336690064996,
+    -49.0,
+    220.73499897752515
+   ]
+  },
+  "bbox_diag_mm": 63.639740489877575,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 23"
+  ],
+  "center_of_mass": [
+   221.14229823284492,
+   -31.500000000000004,
+   233.94635122556878
+  ],
+  "closed": true,
+  "faces": 6,
+  "seconds": 0.01034329100366449,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_wrist_flex.step",
+  "volume_mm3": 39075.39999999589
+ },
+ "servo_wrist_roll": {
+  "area_mm2": 2537.763830472713,
+  "bbox": {
+   "max": [
+    291.23402049011,
+    5.923232552464,
+    244.72032681134
+   ],
+   "min": [
+    262.73402049011,
+    -6.276767447536,
+    212.22032681134
+   ]
+  },
+  "bbox_diag_mm": 44.9148082485053,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 26"
+  ],
+  "center_of_mass": [
+   274.5629974140856,
+   -0.17676744753599968,
+   228.56880053399874
+  ],
+  "closed": true,
+  "faces": 16,
+  "seconds": 0.058078957998077385,
+  "source": "solidcraft-cli 0.30.1 eval out/step/servo_wrist_roll.step",
+  "volume_mm3": 6822.529160057397
+ },
+ "upper_link": {
+  "area_mm2": 39100.57982823467,
+  "bbox": {
+   "max": [
+    122.23410045657161,
+    21.50000000000003,
+    254.17005434688002
+   ],
+   "min": [
+    27.841457470177687,
+    -6.500000000000008,
+    91.60000043209882
+   ]
+  },
+  "bbox_diag_mm": 190.0604995253135,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 16"
+  ],
+  "center_of_mass": [
+   70.42827901056758,
+   7.931114847875671,
+   176.10022431994508
+  ],
+  "closed": true,
+  "faces": 60,
+  "seconds": 2.399784916000499,
+  "source": "solidcraft-cli 0.30.1 eval out/step/upper_link.step",
+  "volume_mm3": 131972.54181564695
+ },
+ "wrist": {
+  "area_mm2": 11143.296461759759,
+  "bbox": {
+   "max": [
+    278.63402049071124,
+    8.623232556703208,
+    254.37005434818002
+   ],
+   "min": [
+    212.13414337029917,
+    -8.976767447536,
+    208.37032681133996
+   ]
+  },
+  "bbox_diag_mm": 82.75245368351712,
+  "bodies": 1,
+  "body_names": [
+   "Open CASCADE STEP translator 7.8 25"
+  ],
+  "center_of_mass": [
+   245.50312173267272,
+   0.5611221561570355,
+   232.96291505705787
+  ],
+  "closed": true,
+  "faces": 44,
+  "seconds": 1.187088833998132,
+  "source": "solidcraft-cli 0.30.1 eval out/step/wrist.step",
+  "volume_mm3": 30845.676396556777
+ }
+}
